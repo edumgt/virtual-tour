@@ -1,0 +1,6 @@
+{
+  "name": "서울 경복궁 & 광화문 3D 입체 가상 탐방",
+  "description": "광화문, 월대, 해태상, 근정전, 경회루, 세종대왕상, 북악산 등 조선의 정궁을 3D 입체 공간으로 세밀하게 탐험하는 고품격 디지털 헤리티지 인터랙티브 뷰어",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
