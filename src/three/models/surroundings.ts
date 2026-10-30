@@ -161,12 +161,12 @@ export function buildSurroundings(materials: PalaceMaterials): THREE.Group {
     return guard;
   }
 
-  // Guard positions in front of Gwanghwamun gate
+  // Guard positions in front of Gwanghwamun gate flanking the Woldae terrace ramp
   const guardCoords = [
-    [-3.2, 0, 7.5, 0x1d3a78], // Blue robe (청호위)
-    [3.2, 0, 7.5, 0x9b2424],  // Red robe (적호위)
-    [-7.5, 0, 7.5, 0xd49b29], // Yellow robe (수문장)
-    [7.5, 0, 7.5, 0x1c4a3b],  // Green robe
+    [-6.2, 0.8, 18, 0x1d3a78], // Blue robe (청호위)
+    [6.2, 0.8, 18, 0x9b2424],  // Red robe (적호위)
+    [-11.5, 0, 14, 0xd49b29], // Yellow robe (수문장)
+    [11.5, 0, 14, 0x1c4a3b],  // Green robe
   ];
 
   guardCoords.forEach(([gx, gy, gz, color]) => {
@@ -176,17 +176,17 @@ export function buildSurroundings(materials: PalaceMaterials): THREE.Group {
     root.add(guard);
   });
 
-  // Royal Joseon Banners (의장기 - 용기, 초요기, 순라기)
+  // Royal Joseon Banners (의장기 - 용기, 초요기, 순라기) placed proudly along terrace flanks
   const bannerMat = new THREE.MeshStandardMaterial({
     color: 0x9e2a2b,
     roughness: 0.5,
     side: THREE.DoubleSide,
   });
-  [-4.5, 4.5].forEach((bx) => {
+  [-9.2, 9.2].forEach((bx) => {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 6.2, 8), materials.goldLeaf);
-    pole.position.set(bx, 3.1, 8.2);
+    pole.position.set(bx, 3.1, 26);
     const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.4), bannerMat);
-    flag.position.set(bx + 0.8, 4.8, 8.2);
+    flag.position.set(bx + (bx > 0 ? 0.8 : -0.8), 4.8, 26);
     root.add(pole, flag);
   });
 

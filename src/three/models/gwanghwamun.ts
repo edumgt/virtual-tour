@@ -135,24 +135,37 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   const yukchukGroup = new THREE.Group();
   yukchukGroup.name = 'yukchuk_stone_base';
 
-  // 4 Granite Vertical Piers dividing the 3 arches
-  const pier1 = new THREE.Mesh(new THREE.BoxGeometry(8.6, 5.0, 12), materials.granite);
-  pier1.position.set(-15.7, 2.5, 0);
+  // Base Plinths (하부 기단석 - Darker granite base course matching historical masonry & reference)
+  const plinthHeight = 1.1;
+  const plinth1 = new THREE.Mesh(new THREE.BoxGeometry(8.65, plinthHeight, 12.08), materials.granitePlinth);
+  plinth1.position.set(-15.7, plinthHeight * 0.5, 0);
+  const plinth2 = new THREE.Mesh(new THREE.BoxGeometry(5.25, plinthHeight, 12.08), materials.granitePlinth);
+  plinth2.position.set(-5.0, plinthHeight * 0.5, 0);
+  const plinth3 = new THREE.Mesh(new THREE.BoxGeometry(5.25, plinthHeight, 12.08), materials.granitePlinth);
+  plinth3.position.set(5.0, plinthHeight * 0.5, 0);
+  const plinth4 = new THREE.Mesh(new THREE.BoxGeometry(8.65, plinthHeight, 12.08), materials.granitePlinth);
+  plinth4.position.set(15.7, plinthHeight * 0.5, 0);
+  yukchukGroup.add(plinth1, plinth2, plinth3, plinth4);
+
+  // 4 Granite Vertical Piers dividing the 3 arches (upper stone course)
+  const pierHeight = 5.0 - plinthHeight;
+  const pier1 = new THREE.Mesh(new THREE.BoxGeometry(8.6, pierHeight, 12), materials.granite);
+  pier1.position.set(-15.7, plinthHeight + pierHeight * 0.5, 0);
   pier1.castShadow = true;
   pier1.receiveShadow = true;
 
-  const pier2 = new THREE.Mesh(new THREE.BoxGeometry(5.2, 5.2, 12), materials.granite);
-  pier2.position.set(-5.0, 2.6, 0);
+  const pier2 = new THREE.Mesh(new THREE.BoxGeometry(5.2, pierHeight, 12), materials.granite);
+  pier2.position.set(-5.0, plinthHeight + pierHeight * 0.5, 0);
   pier2.castShadow = true;
   pier2.receiveShadow = true;
 
-  const pier3 = new THREE.Mesh(new THREE.BoxGeometry(5.2, 5.2, 12), materials.granite);
-  pier3.position.set(5.0, 2.6, 0);
+  const pier3 = new THREE.Mesh(new THREE.BoxGeometry(5.2, pierHeight, 12), materials.granite);
+  pier3.position.set(5.0, plinthHeight + pierHeight * 0.5, 0);
   pier3.castShadow = true;
   pier3.receiveShadow = true;
 
-  const pier4 = new THREE.Mesh(new THREE.BoxGeometry(8.6, 5.0, 12), materials.granite);
-  pier4.position.set(15.7, 2.5, 0);
+  const pier4 = new THREE.Mesh(new THREE.BoxGeometry(8.6, pierHeight, 12), materials.granite);
+  pier4.position.set(15.7, plinthHeight + pierHeight * 0.5, 0);
   pier4.castShadow = true;
   pier4.receiveShadow = true;
 
@@ -170,6 +183,80 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   lintelBeam.receiveShadow = true;
 
   yukchukGroup.add(pier1, pier2, pier3, pier4, lintelBeam);
+
+  // Flanking Palace Fortress Walls (좌우 궁장 담장 - left & right wings matching reference image)
+  function createFlankingWall(side: 'left' | 'right'): THREE.Group {
+    const wall = new THREE.Group();
+    const xOffset = side === 'left' ? -34 : 34; // Extends from 20 to 48 (width 28m)
+    const wallWidth = 28;
+    const wallDepth = 4.2;
+    const wallHeight = 4.4;
+
+    // Dark granite plinth base course
+    const wPlinth = new THREE.Mesh(
+      new THREE.BoxGeometry(wallWidth, plinthHeight, wallDepth + 0.1),
+      materials.granitePlinth
+    );
+    wPlinth.position.set(0, plinthHeight * 0.5, 0);
+    wPlinth.castShadow = true;
+    wPlinth.receiveShadow = true;
+    wall.add(wPlinth);
+
+    // Weathered ashlar granite wall body
+    const wBody = new THREE.Mesh(
+      new THREE.BoxGeometry(wallWidth, wallHeight - plinthHeight, wallDepth),
+      materials.granite
+    );
+    wBody.position.set(0, plinthHeight + (wallHeight - plinthHeight) * 0.5, 0);
+    wBody.castShadow = true;
+    wBody.receiveShadow = true;
+    wall.add(wBody);
+
+    // Yeojang Parapet (여장 - Crenellated parapet with Giwa tile coping)
+    const parapetH = 1.0;
+    const parapetWall = new THREE.Mesh(
+      new THREE.BoxGeometry(wallWidth, parapetH, 1.2),
+      materials.granite
+    );
+    parapetWall.position.set(0, wallHeight + parapetH * 0.5, 0);
+    parapetWall.castShadow = true;
+    wall.add(parapetWall);
+
+    // Giwa tile roof coping along the wall parapet
+    const parapetGiwa = new THREE.Mesh(
+      new THREE.BoxGeometry(wallWidth + 0.4, 0.28, 1.6),
+      materials.giwaRoof
+    );
+    parapetGiwa.position.set(0, wallHeight + parapetH + 0.14, 0);
+    parapetGiwa.castShadow = true;
+    wall.add(parapetGiwa);
+
+    // White plaster ridge strip on top of coping
+    const parapetRidge = new THREE.Mesh(
+      new THREE.BoxGeometry(wallWidth + 0.45, 0.08, 0.4),
+      materials.eavesWhite
+    );
+    parapetRidge.position.set(0, wallHeight + parapetH + 0.3, 0);
+    wall.add(parapetRidge);
+
+    // White stone boundary piers / crenel posts (치석 / 머릿돌) as seen in reference image
+    [-wallWidth * 0.48, 0, wallWidth * 0.48].forEach((px) => {
+      const post = new THREE.Mesh(
+        new THREE.BoxGeometry(0.7, parapetH + 0.4, 1.4),
+        materials.eavesWhite
+      );
+      post.position.set(px, wallHeight + (parapetH + 0.4) * 0.5, 0);
+      post.castShadow = true;
+      wall.add(post);
+    });
+
+    wall.position.set(xOffset, 0, 0);
+    return wall;
+  }
+
+  const leftWall = createFlankingWall('left');
+  const rightWall = createFlankingWall('right');
+  yukchukGroup.add(leftWall, rightWall);
 
   // 3 Hongyemun Arches (홍예문 - Rainbow Arched Gate Vaults)
   const arches = [
@@ -231,6 +318,15 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   const parapetCapBack = parapetCapFront.clone();
   parapetCapBack.position.z = -6.1;
 
+  // White stone posts at corners of parapet (머릿돌)
+  [-20.1, -10, 10, 20.1].forEach((px) => {
+    const postFront = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.3, 0.7), materials.eavesWhite);
+    postFront.position.set(px, 7.85, 6.1);
+    const postBack = postFront.clone();
+    postBack.position.z = -6.1;
+    yukchukGroup.add(postFront, postBack);
+  });
+
   yukchukGroup.add(parapetFront, parapetCapFront, parapetBack, parapetCapBack);
   root.add(yukchukGroup);
 
@@ -244,9 +340,23 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   tier1Floor.position.set(0, 0.25, 0);
   munruGroup.add(tier1Floor);
 
+  // Tier 1 Perimeter Balustrade Railing (하층 계자난간)
+  const t1RailFront = new THREE.Mesh(new THREE.BoxGeometry(31.8, 0.65, 0.12), materials.royalWood);
+  t1RailFront.position.set(0, 0.8, 4.6);
+  const t1RailBack = t1RailFront.clone();
+  t1RailBack.position.z = -4.6;
+  munruGroup.add(t1RailFront, t1RailBack);
+
+  // Tier 1 Enclosed Timber Wall Partition (중앙 칸 판벽/격자문 - closes visual gap)
+  const t1Wall = new THREE.Mesh(new THREE.BoxGeometry(26, 2.7, 0.2), materials.royalWood);
+  t1Wall.position.set(0, 1.85, 0);
+  const t1Lattice = new THREE.Mesh(new THREE.BoxGeometry(24, 2.3, 0.26), materials.latticeWindow);
+  t1Lattice.position.set(0, 1.85, 0);
+  munruGroup.add(t1Wall, t1Lattice);
+
   // Tier 1 Columns with Granite Plinths (초석)
   const pillarGeo = new THREE.CylinderGeometry(0.32, 0.35, 3.4, 14);
-  const xPillars = [-13, -8.8, -4.4, 4.4, 8.8, 13]; // Center bay open
+  const xPillars = [-13, -8.8, -4.4, 4.4, 8.8, 13]; // Stately facade spacing
   const zPillars = [-3.8, 3.8];
 
   xPillars.forEach((px) => {

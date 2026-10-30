@@ -1,8 +1,8 @@
 import * as THREE from 'three';
+import giwaRoofUrl from '../assets/images/korean_giwa_roof_1793327454001.jpg';
+import graniteWallUrl from '../assets/images/korean_granite_wall_1793327439167.jpg';
 import {
-  createGiwaRoofTexture,
   createDancheongTexture,
-  createGraniteStoneTexture,
   createWoodGrainTexture,
   createLatticeWindowTexture,
   createIlworobongdoTexture,
@@ -15,6 +15,7 @@ export interface PalaceMaterials {
   giwaRoof: THREE.MeshStandardMaterial;
   dancheong: THREE.MeshStandardMaterial;
   granite: THREE.MeshStandardMaterial;
+  granitePlinth: THREE.MeshStandardMaterial;
   royalWood: THREE.MeshStandardMaterial;
   pillarCrimson: THREE.MeshStandardMaterial;
   latticeWindow: THREE.MeshStandardMaterial;
@@ -34,14 +35,23 @@ export interface PalaceMaterials {
 }
 
 export function initPalaceMaterials(): PalaceMaterials {
-  const giwaTex = createGiwaRoofTexture();
-  giwaTex.repeat.set(4, 4);
+  const loader = new THREE.TextureLoader();
+
+  // Photorealistic high-resolution authentic textures matching user reference
+  const giwaTex = loader.load(giwaRoofUrl);
+  giwaTex.wrapS = THREE.RepeatWrapping;
+  giwaTex.wrapT = THREE.RepeatWrapping;
+  giwaTex.colorSpace = THREE.SRGBColorSpace;
+  giwaTex.repeat.set(1.5, 1.5); // Natural scale for Korean ceramic Giwa tile ribs
+
+  const graniteTex = loader.load(graniteWallUrl);
+  graniteTex.wrapS = THREE.RepeatWrapping;
+  graniteTex.wrapT = THREE.RepeatWrapping;
+  graniteTex.colorSpace = THREE.SRGBColorSpace;
+  graniteTex.repeat.set(4, 2.5);
 
   const dancheongTex = createDancheongTexture();
   dancheongTex.repeat.set(4, 1);
-
-  const graniteTex = createGraniteStoneTexture();
-  graniteTex.repeat.set(8, 8);
 
   const woodTex = createWoodGrainTexture();
   woodTex.repeat.set(1, 4);
@@ -56,44 +66,53 @@ export function initPalaceMaterials(): PalaceMaterials {
     map: giwaTex,
     bumpMap: giwaTex,
     bumpScale: 0.08,
-    color: 0xffffff,
-    roughness: 0.65,
-    metalness: 0.08,
+    color: 0x3d4147, // Authentic dark charcoal ceramic tile matching reference image
+    roughness: 0.52,
+    metalness: 0.1,
   });
 
   const dancheong = new THREE.MeshStandardMaterial({
     map: dancheongTex,
     color: 0xffffff,
-    roughness: 0.45,
+    roughness: 0.42,
     metalness: 0.04,
   });
 
   const granite = new THREE.MeshStandardMaterial({
     map: graniteTex,
     bumpMap: graniteTex,
-    bumpScale: 0.04,
-    color: 0xd8d2c4,
-    roughness: 0.85,
+    bumpScale: 0.05,
+    color: 0xf5f1e8, // Authentic weathered Ashlar granite matching reference
+    roughness: 0.82,
+    metalness: 0.02,
+  });
+
+  const granitePlinth = new THREE.MeshStandardMaterial({
+    map: graniteTex,
+    bumpMap: graniteTex,
+    bumpScale: 0.07,
+    color: 0x4e4a44, // Dark charcoal stone plinth course at the bottom of the wall
+    roughness: 0.88,
     metalness: 0.02,
   });
 
   const royalWood = new THREE.MeshStandardMaterial({
     map: woodTex,
-    color: 0x8a2f24, // Joseon vermilion pillar tint
-    roughness: 0.65,
-    metalness: 0.04,
+    color: 0x5a2016, // Rich Joseon aged dark vermilion wood
+    roughness: 0.62,
+    metalness: 0.05,
   });
 
   const pillarCrimson = new THREE.MeshStandardMaterial({
-    color: 0x9b2a1e,
-    roughness: 0.55,
+    color: 0x7e261e, // Deep Joseon cinnabar vermilion
+    roughness: 0.52,
     metalness: 0.05,
   });
 
   const latticeWindow = new THREE.MeshStandardMaterial({
     map: latticeTex,
     color: 0xffffff,
-    roughness: 0.4,
+    roughness: 0.38,
     metalness: 0.02,
   });
 
@@ -175,6 +194,7 @@ export function initPalaceMaterials(): PalaceMaterials {
     giwaRoof,
     dancheong,
     granite,
+    granitePlinth,
     royalWood,
     pillarCrimson,
     latticeWindow,
@@ -195,6 +215,7 @@ export function initPalaceMaterials(): PalaceMaterials {
     giwaRoof,
     dancheong,
     granite,
+    granitePlinth,
     royalWood,
     pillarCrimson,
     latticeWindow,
@@ -213,8 +234,8 @@ export function initPalaceMaterials(): PalaceMaterials {
     dispose: () => {
       allMaterials.forEach((m) => m.dispose());
       giwaTex.dispose();
-      dancheongTex.dispose();
       graniteTex.dispose();
+      dancheongTex.dispose();
       woodTex.dispose();
       latticeTex.dispose();
       ilworoTex.dispose();

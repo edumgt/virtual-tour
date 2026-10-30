@@ -100,18 +100,18 @@ export function createKoreanRoof(
   roofMesh.receiveShadow = true;
   roof.add(roofMesh);
 
-  // 2. Under-Eaves Soffit & Fascia Trim (처마 부연 & 백색 처마선)
-  // A clean solid perimeter border that frames the roof
+  // 2. Under-Eaves Soffit & Fascia Trim (처마 부연 & 단청 목조 처마선)
+  // Deep Dancheong decorated under-eaves soffit and fascia board
   const eavesTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(width + 0.4, 0.22, depth + 0.4),
-    materials.eavesWhite
+    new THREE.BoxGeometry(width + 0.3, 0.22, depth + 0.3),
+    materials.dancheong
   );
   eavesTrim.position.set(0, 0.1, 0);
   roof.add(eavesTrim);
 
   // Dancheong decorated under-eaves soffit board
   const underSoffit = new THREE.Mesh(
-    new THREE.BoxGeometry(width - 0.6, 0.18, depth - 0.6),
+    new THREE.BoxGeometry(width - 0.5, 0.2, depth - 0.5),
     materials.dancheong
   );
   underSoffit.position.set(0, -0.05, 0);
@@ -206,7 +206,7 @@ export function createDapoBracketCluster(materials: PalaceMaterials): THREE.Grou
 }
 
 /**
- * Creates continuous horizontal tie-beams (창방 & 평방) and aligned bracket sets
+ * Creates continuous horizontal tie-beams (창방 & 평방), entablature frieze, and aligned bracket sets
  */
 export function createDapoFacadeRow(
   width: number,
@@ -224,14 +224,35 @@ export function createDapoFacadeRow(
   const pyeongbang = new THREE.Mesh(new THREE.BoxGeometry(width + 1.2, 0.24, depth + 1.2), materials.dancheong);
   pyeongbang.position.set(0, 0.44, 0);
 
-  row.add(changbang, pyeongbang);
+  // Continuous Dancheong entablature board (포벽 - Pobyeok: fills open gaps beneath eaves)
+  const pobyeok = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.48, depth + 0.6), materials.dancheong);
+  pobyeok.position.set(0, 0.74, 0);
 
-  // Front bracket sets positioned strictly above pillars
+  row.add(changbang, pyeongbang, pobyeok);
+
+  // Both Column brackets (주심포) AND intermediate bay brackets (간포 / 공간포)
   const halfD = depth / 2;
-  pillarPositionsX.forEach((px) => {
-    const bracket = createDapoBracketCluster(materials);
-    bracket.position.set(px, 0.56, halfD);
-    row.add(bracket);
+  const allBracketPositionsX: number[] = [];
+
+  for (let i = 0; i < pillarPositionsX.length; i++) {
+    allBracketPositionsX.push(pillarPositionsX[i]);
+    if (i < pillarPositionsX.length - 1) {
+      // Midpoint intermediate bracket cluster
+      const mid = (pillarPositionsX[i] + pillarPositionsX[i + 1]) / 2;
+      allBracketPositionsX.push(mid);
+    }
+  }
+
+  allBracketPositionsX.forEach((px) => {
+    // Front eaves brackets
+    const bracketFront = createDapoBracketCluster(materials);
+    bracketFront.position.set(px, 0.56, halfD);
+    // Back eaves brackets
+    const bracketBack = createDapoBracketCluster(materials);
+    bracketBack.position.set(px, 0.56, -halfD);
+    bracketBack.rotation.y = Math.PI;
+
+    row.add(bracketFront, bracketBack);
   });
 
   return row;
