@@ -199,6 +199,8 @@ export class SceneManager {
       { id: 'sejong', pos: [0, 8.5, 68] },
       { id: 'yisunsin', pos: [0, 13.5, 120] },
       { id: 'bugaksan', pos: [0, 48, -190] },
+      { id: 'cheoma_craft', pos: [6, 12.0, 4] },
+      { id: 'hongyemun_vault', pos: [0, 4.0, 0] },
     ];
 
     const beaconGeo = new THREE.SphereGeometry(0.7, 12, 10);

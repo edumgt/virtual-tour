@@ -9,11 +9,16 @@ import {
   createGwanghwamunSignTexture,
   createGeunjeongjeonSignTexture,
   createGyeonghoeruSignTexture,
+  createRafterEndTexture,
+  createDragonCeilingTexture,
+  createGableHapgakTexture,
+  createIronBandTexture,
 } from './textures';
 
 export interface PalaceMaterials {
   giwaRoof: THREE.MeshStandardMaterial;
   dancheong: THREE.MeshStandardMaterial;
+  dancheongWood: THREE.MeshStandardMaterial;
   granite: THREE.MeshStandardMaterial;
   granitePlinth: THREE.MeshStandardMaterial;
   royalWood: THREE.MeshStandardMaterial;
@@ -30,6 +35,11 @@ export interface PalaceMaterials {
   gwanghwamunSign: THREE.MeshStandardMaterial;
   geunjeongjeonSign: THREE.MeshStandardMaterial;
   gyeonghoeruSign: THREE.MeshStandardMaterial;
+  rafterEnd: THREE.MeshStandardMaterial;
+  dragonCeiling: THREE.MeshStandardMaterial;
+  gableHapgak: THREE.MeshStandardMaterial;
+  ironBand: THREE.MeshStandardMaterial;
+  dumuBronze: THREE.MeshStandardMaterial;
   wireframeMode: boolean;
   dispose: () => void;
 }
@@ -57,10 +67,15 @@ export function initPalaceMaterials(): PalaceMaterials {
   woodTex.repeat.set(1, 4);
 
   const latticeTex = createLatticeWindowTexture();
+  latticeTex.repeat.set(16, 1);
   const ilworoTex = createIlworobongdoTexture();
   const gwanghwamunSignTex = createGwanghwamunSignTexture();
   const geunjeongjeonSignTex = createGeunjeongjeonSignTexture();
   const gyeonghoeruSignTex = createGyeonghoeruSignTexture();
+  const rafterEndTex = createRafterEndTexture();
+  const dragonCeilingTex = createDragonCeilingTexture();
+  const gableHapgakTex = createGableHapgakTexture();
+  const ironBandTex = createIronBandTexture();
 
   const giwaRoof = new THREE.MeshStandardMaterial({
     map: giwaTex,
@@ -190,9 +205,50 @@ export function initPalaceMaterials(): PalaceMaterials {
     metalness: 0.2,
   });
 
+  const dancheongWood = new THREE.MeshStandardMaterial({
+    color: 0x184838, // Deep traditional celadon base wood
+    roughness: 0.65,
+    metalness: 0.02,
+  });
+
+  const rafterEnd = new THREE.MeshStandardMaterial({
+    map: rafterEndTex,
+    color: 0xffffff,
+    roughness: 0.45,
+    metalness: 0.03,
+  });
+
+  const dragonCeiling = new THREE.MeshStandardMaterial({
+    map: dragonCeilingTex,
+    color: 0xffffff,
+    roughness: 0.38,
+    metalness: 0.15,
+  });
+
+  const gableHapgak = new THREE.MeshStandardMaterial({
+    map: gableHapgakTex,
+    color: 0xffffff,
+    roughness: 0.72,
+    metalness: 0.02,
+  });
+
+  const ironBand = new THREE.MeshStandardMaterial({
+    map: ironBandTex,
+    color: 0xffffff,
+    roughness: 0.55,
+    metalness: 0.65,
+  });
+
+  const dumuBronze = new THREE.MeshStandardMaterial({
+    color: 0x4a433c,
+    roughness: 0.45,
+    metalness: 0.75,
+  });
+
   const allMaterials = [
     giwaRoof,
     dancheong,
+    dancheongWood,
     granite,
     granitePlinth,
     royalWood,
@@ -209,11 +265,17 @@ export function initPalaceMaterials(): PalaceMaterials {
     gwanghwamunSign,
     geunjeongjeonSign,
     gyeonghoeruSign,
+    rafterEnd,
+    dragonCeiling,
+    gableHapgak,
+    ironBand,
+    dumuBronze,
   ];
 
   return {
     giwaRoof,
     dancheong,
+    dancheongWood,
     granite,
     granitePlinth,
     royalWood,
@@ -230,6 +292,11 @@ export function initPalaceMaterials(): PalaceMaterials {
     gwanghwamunSign,
     geunjeongjeonSign,
     gyeonghoeruSign,
+    rafterEnd,
+    dragonCeiling,
+    gableHapgak,
+    ironBand,
+    dumuBronze,
     wireframeMode: false,
     dispose: () => {
       allMaterials.forEach((m) => m.dispose());
@@ -242,6 +309,10 @@ export function initPalaceMaterials(): PalaceMaterials {
       gwanghwamunSignTex.dispose();
       geunjeongjeonSignTex.dispose();
       gyeonghoeruSignTex.dispose();
+      rafterEndTex.dispose();
+      dragonCeilingTex.dispose();
+      gableHapgakTex.dispose();
+      ironBandTex.dispose();
     },
   };
 }

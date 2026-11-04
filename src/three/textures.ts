@@ -445,3 +445,255 @@ export function createGyeonghoeruSignTexture(): THREE.CanvasTexture {
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
+
+/**
+ * Creates authentic Dancheong painted rafter-end medallions (마구리 단청).
+ * Green base with red/yellow concentric lotus petals and white borders.
+ */
+export function createRafterEndTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background deep celadon green (뇌록)
+  ctx.fillStyle = '#174033';
+  ctx.fillRect(0, 0, 256, 256);
+
+  const cx = 128;
+  const cy = 128;
+
+  // Outer red ring (석간주)
+  ctx.beginPath();
+  ctx.arc(cx, cy, 115, 0, Math.PI * 2);
+  ctx.fillStyle = '#942226';
+  ctx.fill();
+
+  // White border line
+  ctx.strokeStyle = '#f5f4ef';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Deep cobalt ring (군청)
+  ctx.beginPath();
+  ctx.arc(cx, cy, 88, 0, Math.PI * 2);
+  ctx.fillStyle = '#183863';
+  ctx.fill();
+
+  // Yellow lotus core (황토)
+  ctx.beginPath();
+  ctx.arc(cx, cy, 55, 0, Math.PI * 2);
+  ctx.fillStyle = '#d99f2b';
+  ctx.fill();
+
+  // Pure white flower center with gold stamen
+  ctx.beginPath();
+  ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+  ctx.fillStyle = '#f8f6f0';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffd700';
+  ctx.fill();
+
+  // 8 radiating lotus petal contours
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 3;
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * 26, cy + Math.sin(a) * 26);
+    ctx.lineTo(cx + Math.cos(a) * 110, cy + Math.sin(a) * 110);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates imperial twin ascending dragons amidst swirling clouds (홍예 천장 쌍룡도)
+ * Painted inside the central royal arch vault of Gwanghwamun.
+ */
+export function createDragonCeilingTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d')!;
+
+  // Deep imperial navy / indigo background (청천)
+  ctx.fillStyle = '#0d1b2a';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  // Swirling auspicious clouds (운기문 - Un-gimun)
+  ctx.fillStyle = 'rgba(40, 75, 99, 0.4)';
+  for (let i = 0; i < 30; i++) {
+    const rx = Math.random() * 1024;
+    const ry = Math.random() * 1024;
+    const rad = 60 + Math.random() * 120;
+    ctx.beginPath();
+    ctx.arc(rx, ry, rad, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Red and Gold Flaming Dragon Pearls (여의주 - Yeouiju) in center
+  const cx = 512;
+  const cy = 512;
+
+  const pearlGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 70);
+  pearlGrad.addColorStop(0, '#ffffff');
+  pearlGrad.addColorStop(0.3, '#ffcc00');
+  pearlGrad.addColorStop(0.7, '#d62828');
+  pearlGrad.addColorStop(1, 'rgba(214, 40, 40, 0)');
+  ctx.fillStyle = pearlGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 70, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Swirling dragon serpentine bodies (황룡 & 청룡)
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 18;
+  ctx.beginPath();
+  // Dragon 1: S-curve from top-left to center
+  ctx.moveTo(180, 200);
+  ctx.bezierCurveTo(280, 120, 420, 220, 480, 450);
+  ctx.bezierCurveTo(520, 560, 360, 680, 260, 820);
+  ctx.stroke();
+
+  // Dragon 2: S-curve from bottom-right to center
+  ctx.strokeStyle = '#3a86ff';
+  ctx.lineWidth = 18;
+  ctx.beginPath();
+  ctx.moveTo(844, 824);
+  ctx.bezierCurveTo(744, 904, 604, 804, 544, 574);
+  ctx.bezierCurveTo(504, 464, 664, 344, 764, 204);
+  ctx.stroke();
+
+  // Dragon claws, whiskers, horns, and scales
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 4;
+  for (let step = 0; step < 8; step++) {
+    const angle = (step / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * 160, cy + Math.sin(angle) * 160);
+    ctx.lineTo(cx + Math.cos(angle + 0.3) * 280, cy + Math.sin(angle + 0.3) * 280);
+    ctx.stroke();
+  }
+
+  // Auspicious cloud border in traditional red and white
+  ctx.strokeStyle = '#c1121f';
+  ctx.lineWidth = 12;
+  ctx.strokeRect(20, 20, 984, 984);
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(32, 32, 960, 960);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates authentic Joseon palace gable wall (합각벽 - Hapgak-byeok)
+ * Features dark baked grey bricks (전돌), white lime plaster seams,
+ * and decorative Chinese character medallions (수·복 / 壽·福).
+ */
+export function createGableHapgakTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Dark slate-grey baked brick base (전돌)
+  ctx.fillStyle = '#2f343b';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Diagonal herringbone / lattice brick pattern (사격자 무늬)
+  ctx.strokeStyle = '#f0eee6'; // White lime mortar
+  ctx.lineWidth = 3.5;
+
+  const step = 42;
+  ctx.beginPath();
+  for (let x = -512; x <= 1024; x += step) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + 512, 512);
+
+    ctx.moveTo(x, 512);
+    ctx.lineTo(x + 512, 0);
+  }
+  ctx.stroke();
+
+  // Central circle medallion with royal character "壽" (Longevity)
+  const cx = 256;
+  const cy = 256;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 90, 0, Math.PI * 2);
+  ctx.fillStyle = '#8f2d2b'; // Dark vermilion red
+  ctx.fill();
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 100px "Noto Serif KR", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('壽', cx, cy + 6);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates black forged iron hardware texture (철물 문두리 & 두정)
+ * for Joseon gate door straps and bosses.
+ */
+export function createIronBandTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+
+  // Dark hammered wrought iron
+  ctx.fillStyle = '#1c1c1f';
+  ctx.fillRect(0, 0, 512, 128);
+
+  // Hammered metal noise & scratches
+  for (let i = 0; i < 300; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.3)';
+    ctx.fillRect(Math.random() * 512, Math.random() * 128, 2, 2);
+  }
+
+  // Row of round dome rivet heads (철두정)
+  const count = 6;
+  const spacing = 512 / count;
+  for (let i = 0; i < count; i++) {
+    const rx = i * spacing + spacing / 2;
+    const ry = 64;
+
+    const grad = ctx.createRadialGradient(rx - 4, ry - 4, 2, rx, ry, 22);
+    grad.addColorStop(0, '#55555c');
+    grad.addColorStop(0.6, '#2a2a2e');
+    grad.addColorStop(1, '#0e0e11');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(rx, ry, 22, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rivet edge shadow
+    ctx.strokeStyle = '#050508';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}

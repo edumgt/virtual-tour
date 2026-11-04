@@ -5,14 +5,21 @@ import {
   createDapoFacadeRow,
   createColumnPlinth,
   createStoneBalustradeLine,
+  createDumuCauldron,
+  createRoyalCanopyAndThrone,
 } from './architecturalCraft';
 
 /**
  * Creates Geunjeongjeon (근정전 - Main Throne Hall, National Treasure No. 223),
  * Double-tiered Woldae, Phoenix Dapdo stone, Courtyard Bakseok flagstones,
- * Pumgyeseok rank stones, Royal Throne (어좌), and Ilworobongdo screen.
- * Upgraded with curved Paljak hip-and-gable roofs, multi-tier Dapo brackets,
- * column plinths, stone balustrades with lotus finials, and coffered ceilings.
+ * Pumgyeseok rank stones, Royal Throne with Dadjip canopy, and Dumu cauldrons.
+ * Advanced Joseon Palace Architecture detailing:
+ * - Double-tier curved Paljak hip-and-gable roofs with exposed double rafters (겹처마: 도리서까래 + 부연)
+ * - Corner Chunya hip beams with Tosu dragon caps (토수) & Hapgak gable walls (합각벽)
+ * - 4 Bronze fire cauldrons (드무) & Royal bronze incense burner (정 - 鼎)
+ * - Phoenix & dragon carved royal ramp stone (답도)
+ * - 12 Zodiac and 4 Guardian Deities stone sculptures (십이지신상 & 사신 석상)
+ * - Royal Throne room with Dadjip dragon canopy and Ilworobongdo screen
  */
 export function buildGeunjeongjeon(materials: PalaceMaterials): THREE.Group {
   const root = new THREE.Group();
@@ -63,7 +70,7 @@ export function buildGeunjeongjeon(materials: PalaceMaterials): THREE.Group {
     jojeongGroup.add(stoneEast, stoneWest, pBaseE, pBaseW);
   }
 
-  // Ring stones (차일고리 - iron rings embedded in bakseok for awnings)
+  // Ring stones (차일고리 - iron rings embedded in bakseok for royal court awnings)
   for (let r = 1; r <= 9; r += 2) {
     const ringEast = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), materials.granite);
     ringEast.rotation.x = Math.PI * 0.5;
@@ -89,7 +96,17 @@ export function buildGeunjeongjeon(materials: PalaceMaterials): THREE.Group {
   // Lower Woldae Balustrades with lotus posts
   const balustradeLowerFront = createStoneBalustradeLine(43.6, materials, 3.4);
   balustradeLowerFront.position.set(0, 1.3, 17.8);
-  woldaeGroup.add(balustradeLowerFront);
+  const balustradeLowerBack = createStoneBalustradeLine(43.6, materials, 3.4);
+  balustradeLowerBack.position.set(0, 1.3, -17.8);
+  balustradeLowerBack.rotation.y = Math.PI;
+  const balustradeLowerL = createStoneBalustradeLine(35.6, materials, 3.4);
+  balustradeLowerL.position.set(-21.8, 1.3, 0);
+  balustradeLowerL.rotation.y = Math.PI * 0.5;
+  const balustradeLowerR = createStoneBalustradeLine(35.6, materials, 3.4);
+  balustradeLowerR.position.set(21.8, 1.3, 0);
+  balustradeLowerR.rotation.y = -Math.PI * 0.5;
+
+  woldaeGroup.add(balustradeLowerFront, balustradeLowerBack, balustradeLowerL, balustradeLowerR);
 
   // Upper Woldae (상월대 - 38m x 30m, height 1.3m on top of lower)
   const sangWoldae = new THREE.Mesh(new THREE.BoxGeometry(38, 1.3, 30), materials.granite);
@@ -103,122 +120,195 @@ export function buildGeunjeongjeon(materials: PalaceMaterials): THREE.Group {
   balustradeUpperFront.position.set(0, 2.6, 14.8);
   const balustradeUpperBack = createStoneBalustradeLine(37.6, materials, 3.4);
   balustradeUpperBack.position.set(0, 2.6, -14.8);
-  woldaeGroup.add(balustradeUpperFront, balustradeUpperBack);
+  balustradeUpperBack.rotation.y = Math.PI;
+  const balustradeUpperL = createStoneBalustradeLine(29.6, materials, 3.4);
+  balustradeUpperL.position.set(-18.8, 2.6, 0);
+  balustradeUpperL.rotation.y = Math.PI * 0.5;
+  const balustradeUpperR = createStoneBalustradeLine(29.6, materials, 3.4);
+  balustradeUpperR.position.set(18.8, 2.6, 0);
+  balustradeUpperR.rotation.y = -Math.PI * 0.5;
 
-  // Southern Royal Staircases & Phoenix Dapdo (답도 - 봉황 조각 판석)
-  for (let i = 0; i < 5; i++) {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(8, 0.26, 0.8), materials.granite);
-    s.position.set(0, 0.13 + i * 0.26, 19.5 - i * 0.7);
-    woldaeGroup.add(s);
-  }
+  woldaeGroup.add(balustradeUpperFront, balustradeUpperBack, balustradeUpperL, balustradeUpperR);
 
-  for (let i = 0; i < 5; i++) {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.26, 0.7), materials.granite);
-    s.position.set(0, 1.43 + i * 0.26, 16.2 - i * 0.6);
-    woldaeGroup.add(s);
-  }
-
-  // Carved Dapdo Phoenix relief stone (답도 판석)
-  const dapdoStone = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 3.4), materials.granite);
-  dapdoStone.position.set(0, 2.15, 14.8);
-  dapdoStone.rotation.x = Math.PI * 0.15;
-  woldaeGroup.add(dapdoStone);
-
-  // Auspicious Four Guardian Spirits (사신수: 청룡, 백호, 주작, 현무) finials
-  const beastGeo = new THREE.BoxGeometry(0.55, 0.7, 0.65);
-  const guardianCorners = [
-    [-18.5, 3.1, 14.5], // South-West (White Tiger / 백호)
-    [18.5, 3.1, 14.5],  // South-East (Blue Dragon / 청룡)
-    [-18.5, 3.1, -14.5],// North-West (Black Tortoise / 현무)
-    [18.5, 3.1, -14.5], // North-East (Vermilion Bird / 주작)
-  ];
-  guardianCorners.forEach(([x, y, z]) => {
-    const guardian = new THREE.Mesh(beastGeo, materials.granite);
-    guardian.position.set(x, y, z);
-    guardian.castShadow = true;
-    woldaeGroup.add(guardian);
+  // 4 Bronze Fire Cauldrons (드무 - Dumu) at the 4 corners of Upper Woldae
+  [
+    { x: -16.5, z: 12.5 },
+    { x: 16.5, z: 12.5 },
+    { x: -16.5, z: -12.5 },
+    { x: 16.5, z: -12.5 },
+  ].forEach((dPos) => {
+    const dumu = createDumuCauldron(materials);
+    dumu.position.set(dPos.x, 2.6, dPos.z);
+    woldaeGroup.add(dumu);
   });
+
+  // Royal Bronze Incense Burner (정 - 鼎) in front of central stairs
+  const censerGroup = new THREE.Group();
+  const censerBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 1.6), materials.granite);
+  censerBase.position.set(0, 0.2, 0);
+  const censerBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.45, 0.8, 12), materials.dumuBronze);
+  censerBowl.position.set(0, 0.8, 0);
+  const censerLid = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.5, 12), materials.dumuBronze);
+  censerLid.position.set(0, 1.45, 0);
+  censerGroup.add(censerBase, censerBowl, censerLid);
+  censerGroup.position.set(0, 2.6, 12.8);
+  woldaeGroup.add(censerGroup);
+
+  // 12 Zodiac & Guardian Animal Sculptures (십이지신상 & 서수상) along stairs and corners
+  const guardianPositions = [
+    { x: -5.5, z: 18.2, name: 'haetae_left' },
+    { x: 5.5, z: 18.2, name: 'haetae_right' },
+    { x: -21.5, z: 17.5, name: 'zodiac_tiger' },
+    { x: 21.5, z: 17.5, name: 'zodiac_dragon' },
+    { x: -18.5, z: 14.5, name: 'zodiac_horse' },
+    { x: 18.5, z: 14.5, name: 'zodiac_ram' },
+  ];
+
+  guardianPositions.forEach((gp) => {
+    const gMesh = new THREE.Group();
+    const gBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.8), materials.granite);
+    gBase.position.set(0, 0.2, 0);
+    const gBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.38, 0.65, 8), materials.granite);
+    gBody.position.set(0, 0.7, 0);
+    const gHead = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), materials.granite);
+    gHead.position.set(0, 1.1, 0.08);
+
+    gMesh.add(gBase, gBody, gHead);
+    gMesh.position.set(gp.x, 1.3, gp.z);
+    woldaeGroup.add(gMesh);
+  });
+
+  // Central Grand Staircase with Phoenix Carved Dapdo Stone (답도 - Dapdo)
+  const stairSteps = 8;
+  for (let s = 0; s < stairSteps; s++) {
+    const y = s * 0.32;
+    const z = 18.2 + (stairSteps - s) * 0.55;
+
+    // Left steps
+    const stepL = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.32, 0.6), materials.granite);
+    stepL.position.set(-3.2, y, z);
+
+    // Right steps
+    const stepR = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.32, 0.6), materials.granite);
+    stepR.position.set(3.2, y, z);
+
+    woldaeGroup.add(stepL, stepR);
+  }
+
+  // Central Slanted Dapdo Stone with Phoenix & Cloud Carvings (답도)
+  const dapdo = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.35, 4.8), materials.granite);
+  dapdo.position.set(0, 1.3, 20.2);
+  dapdo.rotation.x = -Math.PI * 0.16;
+
+  // Phoenix relief gold centerpiece
+  const phoenixRelief = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 3.2), materials.goldLeaf);
+  phoenixRelief.position.set(0, 0.2, 0);
+  dapdo.add(phoenixRelief);
+
+  woldaeGroup.add(dapdo);
 
   root.add(woldaeGroup);
 
-  // 3. The Throne Hall Pavilion (근정전 전각 본채)
+  // 3. Geunjeongjeon Main Hall (근정전 본당 건물)
   const hallGroup = new THREE.Group();
   hallGroup.name = 'geunjeongjeon_hall';
   hallGroup.position.set(0, 2.6, 0);
 
-  // Wooden Base Platform
-  const hallFloor = new THREE.Mesh(new THREE.BoxGeometry(30, 0.4, 22), materials.royalWood);
-  hallFloor.position.set(0, 0.2, 0);
-  hallGroup.add(hallFloor);
+  // Granite Column Plinths (초석) and Vermilion Royal Pillars (석간주 홍기둥)
+  const pillarGeoT1 = new THREE.CylinderGeometry(0.38, 0.42, 4.8, 14);
+  const xPillarsT1 = [-14, -9.5, -4.8, 0, 4.8, 9.5, 14];
+  const zPillarsT1 = [-10, -5, 5, 10];
 
-  // Main Vermilion Pillars with Plinths (외진주, 내진주)
-  const pillarGeo = new THREE.CylinderGeometry(0.42, 0.45, 6.2, 14);
-  const xColumns = [-13, -8.6, -3.8, 3.8, 8.6, 13];
-  const zColumns = [-9, -4.5, 4.5, 9];
+  xPillarsT1.forEach((px) => {
+    zPillarsT1.forEach((pz) => {
+      // Column Plinth Base
+      const plinth = createColumnPlinth(0.44, materials);
+      plinth.position.set(px, 0.1, pz);
 
-  xColumns.forEach((cx) => {
-    zColumns.forEach((cz) => {
-      // Granite plinth stone (초석)
-      const plinth = createColumnPlinth(0.45, materials);
-      plinth.position.set(cx, 0.35, cz);
+      // Vermilion Pillar
+      const pillar = new THREE.Mesh(pillarGeoT1, materials.pillarCrimson);
+      pillar.position.set(px, 2.6, pz);
+      pillar.castShadow = true;
 
-      // Vermilion pillar
-      const col = new THREE.Mesh(pillarGeo, materials.pillarCrimson);
-      col.position.set(cx, 3.5, cz);
-      col.castShadow = true;
-      hallGroup.add(plinth, col);
+      hallGroup.add(plinth, pillar);
     });
   });
 
-  // Front Open Lattice Doors (창호 분합문 - flanking bays, center bay open to throne)
-  [-2, -1, 1, 2].forEach((b) => {
-    const door = new THREE.Mesh(new THREE.BoxGeometry(3.6, 4.8, 0.18), materials.latticeWindow);
-    door.position.set(b * 4.4, 2.8, 9.1);
-    hallGroup.add(door);
-  });
+  // Exterior Lattice Windows and Doors (격자 창호)
+  const frontWallLattice = new THREE.Mesh(new THREE.BoxGeometry(27.8, 3.8, 0.2), materials.latticeWindow);
+  frontWallLattice.position.set(0, 2.8, 9.8);
+  const backWallLattice = frontWallLattice.clone();
+  backWallLattice.position.z = -9.8;
 
-  // Tier 1 Dapo Bracket Cluster Row (하층 다포계 공포 - 3-tier stepped cantilevers)
-  const dapoTier1 = createDapoFacadeRow(30, 22, xColumns, materials);
-  dapoTier1.position.set(0, 6.6, 0);
+  const leftWallLattice = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.8, 19.6), materials.latticeWindow);
+  leftWallLattice.position.set(-13.8, 2.8, 0);
+  const rightWallLattice = leftWallLattice.clone();
+  rightWallLattice.position.x = 13.8;
+
+  hallGroup.add(frontWallLattice, backWallLattice, leftWallLattice, rightWallLattice);
+
+  // Tier 1 Dapo Bracket Row (하층 공포대)
+  const dapoTier1 = createDapoFacadeRow(30, 20.5, xPillarsT1, materials);
+  dapoTier1.position.set(0, 5.0, 0);
   hallGroup.add(dapoTier1);
 
-  // Tier 1 Sloped Curved Giwa Eaves (하층 팔작지붕 처마)
-  const eaves1 = createKoreanRoof(34, 26, 2.8, materials, {
-    isPaljak: true,
+  // Tier 1 Roof with Double Rafters (하층 우진각 겹처마 지붕)
+  const roofTier1 = createKoreanRoof(35, 25, 3.2, materials, {
+    isPaljak: false,
     ridgeLengthRatio: 0.72,
     eavesFlare: 0.42,
     showJapsang: false,
   });
-  eaves1.position.set(0, 7.2, 0);
-  hallGroup.add(eaves1);
+  roofTier1.position.set(0, 5.5, 0);
+  hallGroup.add(roofTier1);
 
-  // Tier 2 Upper Level (상층 누각부)
-  const upperBody = new THREE.Mesh(new THREE.BoxGeometry(24, 3.2, 16), materials.royalWood);
-  upperBody.position.set(0, 9.8, 0);
-  hallGroup.add(upperBody);
+  // Tier 2 Upper Level (상층부)
+  const tier2Base = new THREE.Mesh(new THREE.BoxGeometry(24, 0.5, 15), materials.royalWood);
+  tier2Base.position.set(0, 7.8, 0);
+  hallGroup.add(tier2Base);
 
-  // Tier 2 Lattice clerestory windows
-  const upperWindowFront = new THREE.Mesh(new THREE.BoxGeometry(20, 2.0, 0.15), materials.latticeWindow);
-  upperWindowFront.position.set(0, 9.8, 8.1);
-  const upperWindowBack = upperWindowFront.clone();
-  upperWindowBack.position.z = -8.1;
-  hallGroup.add(upperWindowFront, upperWindowBack);
+  // Tier 2 Pillars with Plinths
+  const pillarGeoT2 = new THREE.CylinderGeometry(0.32, 0.35, 3.6, 12);
+  const xPillarsT2 = [-10, -5, 0, 5, 10];
+  const zPillarsT2 = [-6.5, 6.5];
 
-  // Signboard: "勤政殿" (Gold letters on black lacquer)
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.6, 0.22), materials.geunjeongjeonSign);
-  sign.position.set(0, 10.8, 8.4);
-  hallGroup.add(sign);
+  xPillarsT2.forEach((px) => {
+    zPillarsT2.forEach((pz) => {
+      const plinth = createColumnPlinth(0.35, materials);
+      plinth.position.set(px, 8.0, pz);
+
+      const pillar = new THREE.Mesh(pillarGeoT2, materials.pillarCrimson);
+      pillar.position.set(px, 9.8, pz);
+      pillar.castShadow = true;
+
+      hallGroup.add(plinth, pillar);
+    });
+  });
+
+  // Tier 2 Upper Windows
+  const t2FrontWin = new THREE.Mesh(new THREE.BoxGeometry(19.8, 2.8, 0.2), materials.latticeWindow);
+  t2FrontWin.position.set(0, 9.6, 6.4);
+  const t2BackWin = t2FrontWin.clone();
+  t2BackWin.position.z = -6.4;
+  hallGroup.add(t2FrontWin, t2BackWin);
+
+  // Signboard ("勤政殿" - Geunjeongjeon royal plaque with cinnabar frame)
+  const signFrame = new THREE.Mesh(new THREE.BoxGeometry(5.6, 2.2, 0.18), materials.pillarCrimson);
+  signFrame.position.set(0, 10.45, 6.62);
+
+  const signMesh = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.8, 0.24), materials.geunjeongjeonSign);
+  signMesh.position.set(0, 10.45, 6.7);
+  hallGroup.add(signFrame, signMesh);
 
   // Tier 2 Dapo Bracket Row
-  const xColumnsT2 = [-9.5, -4.5, 4.5, 9.5];
-  const dapoTier2 = createDapoFacadeRow(24, 16, xColumnsT2, materials);
-  dapoTier2.position.set(0, 11.5, 0);
+  const dapoTier2 = createDapoFacadeRow(22, 14, xPillarsT2, materials);
+  dapoTier2.position.set(0, 11.6, 0);
   hallGroup.add(dapoTier2);
 
-  // Tier 2 Grand Paljak Hip-and-Gable Roof (상층 웅장한 팔작지붕)
-  const mainRoof = createKoreanRoof(29, 21, 4.8, materials, {
+  // Tier 2 Grand Curved Paljak Roof with Double Rafters & Hapgak Gable Walls (상층 팔작 겹처마 지붕)
+  const mainRoof = createKoreanRoof(28, 18, 4.4, materials, {
     isPaljak: true,
-    ridgeLengthRatio: 0.62,
+    ridgeLengthRatio: 0.64,
     eavesFlare: 0.52,
     showJapsang: true,
     japsangCount: 7,
@@ -226,37 +316,11 @@ export function buildGeunjeongjeon(materials: PalaceMaterials): THREE.Group {
   mainRoof.position.set(0, 12.2, 0);
   hallGroup.add(mainRoof);
 
-  // 4. Interior Throne (어좌 - Royal Throne) & Ilworobongdo Screen
-  const interiorGroup = new THREE.Group();
-  interiorGroup.name = 'eojwa_throne_interior';
-  interiorGroup.position.set(0, 0.4, -2.5);
+  // 4. Interior Throne & Dadjip Canopy (보좌 & 닫집)
+  const throneRoom = createRoyalCanopyAndThrone(materials);
+  throneRoom.position.set(0, 0.2, -1.5);
+  hallGroup.add(throneRoom);
 
-  // Elevated Throne Platform (당가 - Dang-ga / Bojwa)
-  const bojwaBase = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.85, 4.0), materials.royalWood);
-  bojwaBase.position.set(0, 0.42, 0);
-  interiorGroup.add(bojwaBase);
-
-  // Royal Throne Chair (어좌 - Carved red and gold dragon throne)
-  const chairBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 1.4), materials.royalWood);
-  chairBase.position.set(0, 1.15, 0);
-  const chairBack = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 0.25), materials.royalWood);
-  chairBack.position.set(0, 1.85, -0.6);
-  const goldCrownFinial = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 6), materials.goldLeaf);
-  goldCrownFinial.position.set(0, 2.7, -0.6);
-  interiorGroup.add(chairBase, chairBack, goldCrownFinial);
-
-  // Ilworobongdo Screen (일월오봉도 - Sun, Moon, and Five Peaks screen)
-  const screenMesh = new THREE.Mesh(new THREE.BoxGeometry(6.6, 3.5, 0.12), materials.ilworobongdo);
-  screenMesh.position.set(0, 2.6, -1.8);
-  screenMesh.castShadow = true;
-  interiorGroup.add(screenMesh);
-
-  // Golden Canopy Dragon ceiling pendant (황룡 보개천장)
-  const canopy = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.35, 3.8), materials.goldLeaf);
-  canopy.position.set(0, 5.6, 0);
-  interiorGroup.add(canopy);
-
-  hallGroup.add(interiorGroup);
   root.add(hallGroup);
 
   return root;

@@ -129,3 +129,32 @@ export function clampCameraPosition(
     Math.max(minZ, Math.min(maxZ, pos[2])),
   ];
 }
+
+/**
+ * Calculates authentic concave slope height and corner flare for Korean curved roofs (안허리곡 & 조로)
+ */
+export function calculateEavesHeight(
+  uNorm: number, // -1 to 1
+  vNorm: number, // -1 to 1
+  eavesFlare: number,
+  height: number,
+  ridgeLengthRatio = 0.6
+): number {
+  const distFromRidgeX = Math.max(0, Math.abs(uNorm) - ridgeLengthRatio);
+  const distFromRidgeZ = Math.abs(vNorm);
+  const slopeFactor = Math.max(distFromRidgeZ, distFromRidgeX);
+
+  const ySlope = Math.pow(Math.max(0, 1 - slopeFactor), 1.35) * height;
+  const cornerWeight = Math.pow(Math.abs(uNorm) * Math.abs(vNorm), 2);
+  const yCornerFlair = cornerWeight * eavesFlare * 1.6;
+
+  return ySlope + yCornerFlair;
+}
+
+/**
+ * Computes optimal count of rafter members along an eaves span
+ */
+export function calculateRafterCount(span: number, spacing = 0.65): number {
+  return Math.max(2, Math.floor(span / spacing));
+}
+

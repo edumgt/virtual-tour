@@ -5,13 +5,22 @@ import {
   createDapoFacadeRow,
   createColumnPlinth,
   createStoneBalustradeLine,
+  createGyejaBalustrade,
+  createRoyalGateDoors,
+  createStoneGargoyleSpout,
 } from './architecturalCraft';
 
 /**
  * Creates Gwanghwamun Gate (광화문), Woldae terrace (월대), and Haechi statues (해태상).
- * Upgraded with authentic multi-course Ashlar granite Yukchuk, open Hongyemun arches,
- * stepped Dapo bracket systems (공포), exposed rafters (서까래), stone drain gargoyles (석루조),
- * column base plinths (초석), and gracefully curved sweeping Korean roofs with Japsang sentinels.
+ * Advanced Joseon Palace Architecture detailing:
+ * - Multi-course Ashlar granite Yukchuk (석축 기단) matching historical masonry & reference image
+ * - Hongyemun Arches with imperial Twin Dragon Vault Ceiling (홍예 쌍룡도) & dragon keystones
+ * - Heavy royal doors with wrought iron strapping and bronze lion knocker rings (철물 문두리 & 문고리)
+ * - 8 Stone dragon gargoyle spouts (석루조) and parapet embrasures (여장 총안)
+ * - Double-tiered Munru pavilion with Gyeja curved balustrades (계자난간)
+ * - Stepped Dapo bracket systems (공포), column plinths (초석)
+ * - Graceful curved Korean roofs with exposed double rafters (겹처마 서까래 & 부연),
+ *   projecting Chunya hip beams with Tosu dragon caps (토수), and Japsang sentinels (잡상).
  */
 export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   const root = new THREE.Group();
@@ -21,7 +30,7 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   const woldaeGroup = new THREE.Group();
   woldaeGroup.name = 'woldae';
 
-  // Base terrace slab (Length 34m along Z, Width 14m along X, Height 0.8m)
+  // Base terrace slab (Length 32m along Z, Width 14m along X, Height 0.8m)
   const woldaeBaseGeo = new THREE.BoxGeometry(14, 0.8, 32);
   const woldaeBase = new THREE.Mesh(woldaeBaseGeo, materials.granite);
   woldaeBase.position.set(0, 0.4, 20);
@@ -260,16 +269,17 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
 
   // 3 Hongyemun Arches (홍예문 - Rainbow Arched Gate Vaults)
   const arches = [
-    { x: 0, r: 2.4, h: 5.2, w: 4.8 },
-    { x: -9.5, r: 1.9, h: 4.6, w: 3.8 },
-    { x: 9.5, r: 1.9, h: 4.6, w: 3.8 },
+    { x: 0, r: 2.4, h: 5.2, w: 4.8, isCenter: true },
+    { x: -9.5, r: 1.9, h: 4.6, w: 3.8, isCenter: false },
+    { x: 9.5, r: 1.9, h: 4.6, w: 3.8, isCenter: false },
   ];
 
   arches.forEach((a) => {
     // Arch vault ceiling
+    const archMat = a.isCenter ? materials.dragonCeiling : materials.granite;
     const archVault = new THREE.Mesh(
       new THREE.CylinderGeometry(a.r, a.r, 12.05, 24, 1, false, 0, Math.PI),
-      materials.granite
+      archMat
     );
     archVault.rotation.z = Math.PI;
     archVault.rotation.y = Math.PI * 0.5;
@@ -286,28 +296,48 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
     rimBack.position.z = -6.02;
     yukchukGroup.add(rimFront, rimBack);
 
-    // Heavy iron-studded royal wooden gate doors (판문) recessed inside
-    const door1 = new THREE.Mesh(new THREE.BoxGeometry(a.w * 0.46, a.h - 0.4, 0.2), materials.royalWood);
-    door1.position.set(a.x - a.w * 0.23, (a.h - 0.4) / 2, 0.5);
-    door1.rotation.y = 0.42; // Invitingly open
-    const door2 = new THREE.Mesh(new THREE.BoxGeometry(a.w * 0.46, a.h - 0.4, 0.2), materials.royalWood);
-    door2.position.set(a.x + a.w * 0.23, (a.h - 0.4) / 2, 0.5);
-    door2.rotation.y = -0.42;
-    yukchukGroup.add(door1, door2);
+    // Keystone Dragon Head Relief (홍예 머릿돌 귀면/용두 조각)
+    const keystoneFront = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.65, 0.35),
+      materials.granite
+    );
+    keystoneFront.position.set(a.x, a.h + 0.15, 6.06);
+
+    const dragonNose = new THREE.Mesh(
+      new THREE.ConeGeometry(0.18, 0.28, 5),
+      materials.goldLeaf
+    );
+    dragonNose.rotation.x = Math.PI * 0.5;
+    dragonNose.position.set(a.x, a.h + 0.15, 6.25);
+
+    const keystoneBack = keystoneFront.clone();
+    keystoneBack.position.z = -6.06;
+    const dragonNoseBack = dragonNose.clone();
+    dragonNoseBack.rotation.x = -Math.PI * 0.5;
+    dragonNoseBack.position.z = -6.25;
+
+    yukchukGroup.add(keystoneFront, dragonNose, keystoneBack, dragonNoseBack);
+
+    // Fortified royal wooden gate doors with iron straps & brass knockers
+    const doors = createRoyalGateDoors(a.w, a.h, materials, 0.38);
+    doors.position.set(a.x, 0, 0);
+    yukchukGroup.add(doors);
   });
 
-  // Stone Water Gargoyle Drainage Spouts (석루조 - 4 stone dragon gargoyles)
+  // 8 Sculpted Stone Drainage Gargoyles (석루조 - Seokrujo dragons along parapet deck)
   [-14, -6, 6, 14].forEach((gx) => {
-    const spout = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 0.8), materials.granite);
-    spout.position.set(gx, 7.15, 6.35);
-    spout.rotation.x = 0.15;
-    const spoutBack = spout.clone();
-    spoutBack.position.z = -6.35;
-    spoutBack.rotation.x = -0.15;
-    yukchukGroup.add(spout, spoutBack);
+    // Front gargoyles
+    const spoutFront = createStoneGargoyleSpout(materials);
+    spoutFront.position.set(gx, 7.25, 6.0);
+    // Back gargoyles
+    const spoutBack = createStoneGargoyleSpout(materials);
+    spoutBack.position.set(gx, 7.25, -6.0);
+    spoutBack.rotation.y = Math.PI;
+
+    yukchukGroup.add(spoutFront, spoutBack);
   });
 
-  // Crenellated Parapet with Giwa tile copings (여장 - Yeojang crenels and embrasures)
+  // Crenellated Parapet with Giwa tile copings and embrasures (여장 총안)
   const parapetFront = new THREE.Mesh(new THREE.BoxGeometry(40.4, 1.1, 0.6), materials.granite);
   parapetFront.position.set(0, 7.75, 6.1);
   const parapetCapFront = new THREE.Mesh(new THREE.BoxGeometry(40.6, 0.2, 0.8), materials.giwaRoof);
@@ -317,6 +347,15 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   parapetBack.position.z = -6.1;
   const parapetCapBack = parapetCapFront.clone();
   parapetCapBack.position.z = -6.1;
+
+  // Embrasures / Gunports (총안) along parapet
+  [-16, -11, -5, 0, 5, 11, 16].forEach((ex) => {
+    const embrasureFront = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.65), materials.granitePlinth);
+    embrasureFront.position.set(ex, 7.6, 6.1);
+    const embrasureBack = embrasureFront.clone();
+    embrasureBack.position.z = -6.1;
+    yukchukGroup.add(embrasureFront, embrasureBack);
+  });
 
   // White stone posts at corners of parapet (머릿돌)
   [-20.1, -10, 10, 20.1].forEach((px) => {
@@ -340,14 +379,15 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   tier1Floor.position.set(0, 0.25, 0);
   munruGroup.add(tier1Floor);
 
-  // Tier 1 Perimeter Balustrade Railing (하층 계자난간)
-  const t1RailFront = new THREE.Mesh(new THREE.BoxGeometry(31.8, 0.65, 0.12), materials.royalWood);
-  t1RailFront.position.set(0, 0.8, 4.6);
-  const t1RailBack = t1RailFront.clone();
-  t1RailBack.position.z = -4.6;
+  // Tier 1 Perimeter Balustrade Railing (하층 난간)
+  const t1RailFront = createGyejaBalustrade(31.8, materials, 1.8);
+  t1RailFront.position.set(0, 0.5, 4.6);
+  const t1RailBack = createGyejaBalustrade(31.8, materials, 1.8);
+  t1RailBack.position.set(0, 0.5, -4.6);
+  t1RailBack.rotation.y = Math.PI;
   munruGroup.add(t1RailFront, t1RailBack);
 
-  // Tier 1 Enclosed Timber Wall Partition (중앙 칸 판벽/격자문 - closes visual gap)
+  // Tier 1 Enclosed Timber Wall Partition (중앙 칸 판벽/격자문)
   const t1Wall = new THREE.Mesh(new THREE.BoxGeometry(26, 2.7, 0.2), materials.royalWood);
   t1Wall.position.set(0, 1.85, 0);
   const t1Lattice = new THREE.Mesh(new THREE.BoxGeometry(24, 2.3, 0.26), materials.latticeWindow);
@@ -356,7 +396,7 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
 
   // Tier 1 Columns with Granite Plinths (초석)
   const pillarGeo = new THREE.CylinderGeometry(0.32, 0.35, 3.4, 14);
-  const xPillars = [-13, -8.8, -4.4, 4.4, 8.8, 13]; // Stately facade spacing
+  const xPillars = [-13, -8.8, -4.4, 4.4, 8.8, 13];
   const zPillars = [-3.8, 3.8];
 
   xPillars.forEach((px) => {
@@ -379,8 +419,8 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   dapoTier1.position.set(0, 3.8, 0);
   munruGroup.add(dapoTier1);
 
-  // Tier 1 Graceful Curved Roof (하층 우진각 처마)
-  const roofTier1 = createKoreanRoof(35, 13, 2.4, materials, {
+  // Tier 1 Graceful Curved Roof with Double Rafters (하층 우진각 겹처마)
+  const roofTier1 = createKoreanRoof(35, 13, 2.5, materials, {
     isPaljak: false,
     ridgeLengthRatio: 0.65,
     eavesFlare: 0.38,
@@ -394,11 +434,12 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
   tier2Base.position.set(0, 5.8, 0);
   munruGroup.add(tier2Base);
 
-  // Tier 2 Railing around perimeter balcony (계자난간)
-  const balconyRailFront = new THREE.Mesh(new THREE.BoxGeometry(25.8, 0.75, 0.12), materials.royalWood);
-  balconyRailFront.position.set(0, 6.4, 3.8);
-  const balconyRailBack = balconyRailFront.clone();
-  balconyRailBack.position.z = -3.8;
+  // Tier 2 Railing around perimeter balcony (상층 계자난간)
+  const balconyRailFront = createGyejaBalustrade(25.8, materials, 1.6);
+  balconyRailFront.position.set(0, 6.0, 3.8);
+  const balconyRailBack = createGyejaBalustrade(25.8, materials, 1.6);
+  balconyRailBack.position.set(0, 6.0, -3.8);
+  balconyRailBack.rotation.y = Math.PI;
   munruGroup.add(balconyRailFront, balconyRailBack);
 
   // Tier 2 Lattice Windows / Hanji partitions
@@ -423,23 +464,26 @@ export function buildGwanghwamun(materials: PalaceMaterials): THREE.Group {
     });
   });
 
-  // Tier 2 Signboard ("光化門" - Historically verified black lacquer & gold plaque)
-  const signMesh = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.5, 0.22), materials.gwanghwamunSign);
-  signMesh.position.set(0, 7.9, 3.2);
-  munruGroup.add(signMesh);
+  // Tier 2 Signboard ("光化門" - Historically verified black lacquer & gold plaque with ornate vermilion frame)
+  const signFrame = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.3, 0.18), materials.pillarCrimson);
+  signFrame.position.set(0, 8.05, 3.15);
+
+  const signMesh = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.9, 0.24), materials.gwanghwamunSign);
+  signMesh.position.set(0, 8.05, 3.22);
+  munruGroup.add(signFrame, signMesh);
 
   // Tier 2 Dapo Bracket Row
   const dapoTier2 = createDapoFacadeRow(26, 7.8, xPillarsT2, materials);
   dapoTier2.position.set(0, 8.8, 0);
   munruGroup.add(dapoTier2);
 
-  // Tier 2 Grand Curved Roof (상층 우진각 지붕 - curved concave slope, Yongmaru, Chwimi, and Japsang figures)
-  const mainRoof = createKoreanRoof(30, 12, 3.6, materials, {
+  // Tier 2 Grand Curved Roof with Double Rafters (상층 우진각 겹처마)
+  const mainRoof = createKoreanRoof(30, 12, 3.7, materials, {
     isPaljak: false,
     ridgeLengthRatio: 0.62,
     eavesFlare: 0.48,
     showJapsang: true,
-    japsangCount: 5,
+    japsangCount: 6,
   });
   mainRoof.position.set(0, 9.4, 0);
   munruGroup.add(mainRoof);

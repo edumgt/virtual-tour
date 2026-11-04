@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getLightingPreset, dampVector3, distance3D, clampCameraPosition } from './rules';
+import {
+  getLightingPreset,
+  dampVector3,
+  distance3D,
+  clampCameraPosition,
+  calculateEavesHeight,
+  calculateRafterCount,
+} from './rules';
 
 test('getLightingPreset returns valid day and night configurations', () => {
   const day = getLightingPreset('day');
@@ -39,4 +46,23 @@ test('clampCameraPosition constrains values within allowable bounds', () => {
   assert.equal(clampedExtreme[0], -120);
   assert.equal(clampedExtreme[1], 1.2);
   assert.equal(clampedExtreme[2], 160);
+});
+
+test('calculateEavesHeight computes authentic concave Korean slope with corner sweep', () => {
+  // Center ridge point (u=0, v=0) should equal full height
+  const ridgeY = calculateEavesHeight(0, 0, 0.4, 3.6, 0.6);
+  assert.ok(Math.abs(ridgeY - 3.6) < 0.05);
+
+  // Eaves corner (u=1, v=1) should have corner flair
+  const cornerY = calculateEavesHeight(1, 1, 0.4, 3.6, 0.6);
+  assert.ok(cornerY > 0);
+  assert.ok(cornerY >= 0.4 * 1.6);
+});
+
+test('calculateRafterCount yields realistic counts for palace eaves', () => {
+  const countMunru = calculateRafterCount(32, 0.65);
+  assert.equal(countMunru, 49);
+
+  const countSmall = calculateRafterCount(1, 0.65);
+  assert.equal(countSmall, 2);
 });

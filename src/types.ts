@@ -7,7 +7,7 @@ export interface LandmarkInfo {
   nameKo: string;
   nameEn: string;
   nameHanja: string;
-  category: '국보' | '사적' | '명소' | '조각/상징' | '자연';
+  category: '국보' | '사적' | '명소' | '조각/상징' | '자연' | '건축/기법';
   summaryKo: string;
   summaryEn: string;
   detailsKo: string[];
