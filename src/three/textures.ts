@@ -697,3 +697,57 @@ export function createIronBandTexture(): THREE.CanvasTexture {
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
+
+/**
+ * Creates a soft glowing radial snowflake particle texture
+ */
+export function createSnowParticleTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+
+  const cx = 32;
+  const cy = 32;
+
+  // Soft glowing snowflake orb
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+  grad.addColorStop(0.35, 'rgba(240, 248, 255, 0.85)');
+  grad.addColorStop(0.7, 'rgba(220, 235, 255, 0.35)');
+  grad.addColorStop(1, 'rgba(200, 225, 255, 0.0)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates an elongated translucent rain streak particle texture
+ */
+export function createRainParticleTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+
+  // Smooth vertical streak gradient
+  const grad = ctx.createLinearGradient(16, 0, 16, 128);
+  grad.addColorStop(0, 'rgba(200, 225, 255, 0.0)');
+  grad.addColorStop(0.3, 'rgba(225, 240, 255, 0.4)');
+  grad.addColorStop(0.85, 'rgba(240, 250, 255, 0.95)');
+  grad.addColorStop(1, 'rgba(180, 215, 245, 0.1)');
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(13, 0, 6, 128);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+

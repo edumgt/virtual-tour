@@ -12,8 +12,10 @@ import {
   Sparkles,
   Bell,
   Camera,
+  Snowflake,
+  CloudRain,
 } from 'lucide-react';
-import { TimePreset, RenderingMode, LandmarkInfo } from '../types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from '../types';
 import { soundController } from '../audio/traditionalAudio';
 
 interface NavigationDockProps {
@@ -24,6 +26,8 @@ interface NavigationDockProps {
   onSetTimePreset: (preset: TimePreset) => void;
   renderingMode: RenderingMode;
   onSetRenderingMode: (mode: RenderingMode) => void;
+  weather: WeatherEffect;
+  onSetWeather: (weather: WeatherEffect) => void;
   lang: 'ko' | 'en';
 }
 
@@ -35,10 +39,46 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
   onSetTimePreset,
   renderingMode,
   onSetRenderingMode,
+  weather,
+  onSetWeather,
   lang,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'landmarks' | 'atmosphere' | 'rendering'>('landmarks');
+
+  const weatherOptions: {
+    id: WeatherEffect;
+    labelKo: string;
+    labelEn: string;
+    descKo: string;
+    descEn: string;
+    icon: React.ReactNode;
+  }[] = [
+    {
+      id: 'clear',
+      labelKo: '맑음',
+      labelEn: 'Clear',
+      descKo: '구름 한 점 없는 맑고 청명한 궁궐 하늘',
+      descEn: 'Clear blue skies with full natural lighting',
+      icon: <Sun className="w-3.5 h-3.5 text-amber-400" />,
+    },
+    {
+      id: 'snow',
+      labelKo: '함박눈',
+      labelEn: 'Snow',
+      descKo: '고궁 지붕과 마당에 소복이 내리는 부드러운 눈발',
+      descEn: 'Gentle falling snow flurries over the palace',
+      icon: <Snowflake className="w-3.5 h-3.5 text-sky-300" />,
+    },
+    {
+      id: 'rain',
+      labelKo: '가랑비',
+      labelEn: 'Rain',
+      descKo: '궁궐 처마를 적시며 고즈넉하게 내리는 비안개',
+      descEn: 'Gentle rain streaks with atmospheric mist',
+      icon: <CloudRain className="w-3.5 h-3.5 text-blue-400" />,
+    },
+  ];
 
   const timeOptions: { id: TimePreset; labelKo: string; labelEn: string; icon: React.ReactNode }[] = [
     { id: 'day', labelKo: '맑은 대낮', labelEn: 'Daylight', icon: <Sun className="w-4 h-4 text-amber-400" /> },
@@ -109,12 +149,12 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
       {/* Main Bottom Dock Container (using solid/rgba surfaces without backdrop-filter) */}
       {!isCollapsed && (
         <div className="bg-stone-900 rounded-2xl border border-stone-700/90 shadow-2xl p-3 sm:p-4 text-stone-100">
-          {/* Navigation Category Tabs */}
-          <div className="flex items-center justify-between border-b border-stone-800 pb-2.5 mb-3">
+          {/* Navigation Category Tabs and Quick Controls */}
+          <div className="flex items-center justify-between border-b border-stone-800 pb-2.5 mb-3 gap-2">
             <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto text-xs">
               <button
                 onClick={() => setActiveTab('landmarks')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-medium shrink-0 ${
                   activeTab === 'landmarks'
                     ? 'bg-amber-600 text-white shadow'
                     : 'bg-stone-800/80 text-stone-300 hover:bg-stone-750'
@@ -126,19 +166,19 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
 
               <button
                 onClick={() => setActiveTab('atmosphere')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-medium shrink-0 ${
                   activeTab === 'atmosphere'
                     ? 'bg-amber-600 text-white shadow'
                     : 'bg-stone-800/80 text-stone-300 hover:bg-stone-750'
                 }`}
               >
                 <Sun className="w-3.5 h-3.5" />
-                <span>{lang === 'ko' ? '시간 & 조명' : 'Atmosphere'}</span>
+                <span>{lang === 'ko' ? '시간 & 기상' : 'Atmosphere'}</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('rendering')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors font-medium shrink-0 ${
                   activeTab === 'rendering'
                     ? 'bg-amber-600 text-white shadow'
                     : 'bg-stone-800/80 text-stone-300 hover:bg-stone-750'
@@ -149,15 +189,52 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
               </button>
             </div>
 
-            {/* Quick Interactive Bell */}
-            <button
-              onClick={handleChimeBell}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-amber-300 border border-stone-700/60 text-xs transition-colors shrink-0"
-              title={lang === 'ko' ? '궁궐 풍경 타종음 울리기' : 'Chime Palace Bell'}
-            >
-              <Bell className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{lang === 'ko' ? '타종음' : 'Chime'}</span>
-            </button>
+            {/* Quick Weather Toggle & Interactive Bell */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Weather Quick Toggle Pill */}
+              <div
+                className="flex items-center bg-stone-950/80 rounded-lg p-0.5 border border-stone-800"
+                role="group"
+                aria-label="Weather toggle"
+              >
+                {weatherOptions.map((opt) => {
+                  const isSelected = weather === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      data-weather-toggle={opt.id}
+                      onClick={() => {
+                        onSetWeather(opt.id);
+                        soundController.playGayageumNote(
+                          opt.id === 'snow' ? 523 : opt.id === 'rain' ? 392 : 440
+                        );
+                      }}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
+                        isSelected
+                          ? 'bg-amber-600 text-white font-medium shadow'
+                          : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+                      }`}
+                      title={`${lang === 'ko' ? opt.labelKo : opt.labelEn} - ${lang === 'ko' ? opt.descKo : opt.descEn}`}
+                    >
+                      {opt.icon}
+                      <span className="hidden sm:inline">
+                        {lang === 'ko' ? opt.labelKo : opt.labelEn}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Interactive Bell */}
+              <button
+                onClick={handleChimeBell}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-amber-300 border border-stone-700/60 text-xs transition-colors shrink-0"
+                title={lang === 'ko' ? '궁궐 풍경 타종음 울리기' : 'Chime Palace Bell'}
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{lang === 'ko' ? '타종음' : 'Chime'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Tab 1: Landmarks Carousel */}
@@ -194,38 +271,89 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             </div>
           )}
 
-          {/* Tab 2: Atmosphere & Time of Day */}
+          {/* Tab 2: Atmosphere, Weather & Time of Day */}
           {activeTab === 'atmosphere' && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {timeOptions.map((opt) => {
-                const isSelected = timePreset === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => {
-                      onSetTimePreset(opt.id);
-                      soundController.playGayageumNote(330);
-                    }}
-                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all ${
-                      isSelected
-                        ? 'bg-amber-950/70 border-amber-500 text-amber-100 ring-1 ring-amber-500/50'
-                        : 'bg-stone-800/90 border-stone-700/80 text-stone-300 hover:bg-stone-750'
-                    }`}
-                  >
-                    <div className="p-1.5 rounded-lg bg-stone-900 border border-stone-700/60">
-                      {opt.icon}
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-xs sm:text-sm">
-                        {lang === 'ko' ? opt.labelKo : opt.labelEn}
-                      </div>
-                      <div className="text-[10px] text-stone-400">
-                        {lang === 'ko' ? '태양·하늘 색온도' : 'Solar Color'}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="space-y-2.5">
+              {/* Weather Effects Group */}
+              <div>
+                <div className="text-[11px] font-medium text-stone-400 mb-1.5 flex items-center gap-1.5">
+                  <Snowflake className="w-3 h-3 text-sky-300" />
+                  <span>{lang === 'ko' ? '궁궐 기상 환경 효과 (입체 파티클 시스템)' : 'Palace Weather Particles'}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {weatherOptions.map((opt) => {
+                    const isSelected = weather === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        data-weather-card={opt.id}
+                        onClick={() => {
+                          onSetWeather(opt.id);
+                          soundController.playGayageumNote(
+                            opt.id === 'snow' ? 523 : opt.id === 'rain' ? 392 : 440
+                          );
+                        }}
+                        className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${
+                          isSelected
+                            ? 'bg-amber-950/70 border-amber-500 text-amber-100 ring-1 ring-amber-500/50'
+                            : 'bg-stone-800/90 border-stone-700/80 text-stone-300 hover:bg-stone-750'
+                        }`}
+                      >
+                        <div className="p-1.5 rounded-lg bg-stone-900 border border-stone-700/60 shrink-0">
+                          {opt.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-xs truncate">
+                            {lang === 'ko' ? opt.labelKo : opt.labelEn}
+                          </div>
+                          <div className="text-[10px] text-stone-400 truncate hidden sm:block">
+                            {lang === 'ko' ? opt.descKo : opt.descEn}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Time of Day */}
+              <div>
+                <div className="text-[11px] font-medium text-stone-400 mb-1.5 flex items-center gap-1.5">
+                  <Sun className="w-3 h-3 text-amber-400" />
+                  <span>{lang === 'ko' ? '시간대 & 일조 환경' : 'Time of Day & Sunlight'}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {timeOptions.map((opt) => {
+                    const isSelected = timePreset === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          onSetTimePreset(opt.id);
+                          soundController.playGayageumNote(330);
+                        }}
+                        className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
+                          isSelected
+                            ? 'bg-amber-950/70 border-amber-500 text-amber-100 ring-1 ring-amber-500/50'
+                            : 'bg-stone-800/90 border-stone-700/80 text-stone-300 hover:bg-stone-750'
+                        }`}
+                      >
+                        <div className="p-1.5 rounded-lg bg-stone-900 border border-stone-700/60 shrink-0">
+                          {opt.icon}
+                        </div>
+                        <div className="text-left min-w-0">
+                          <div className="font-semibold text-xs truncate">
+                            {lang === 'ko' ? opt.labelKo : opt.labelEn}
+                          </div>
+                          <div className="text-[10px] text-stone-400 truncate">
+                            {lang === 'ko' ? '태양·하늘 색온도' : 'Solar Color'}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { TimePreset, RenderingMode, LandmarkInfo } from '../types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from '../types';
 import { getLightingPreset, dampVector3 } from '../utils/rules';
 import { initPalaceMaterials, PalaceMaterials } from './materials';
+import { createSnowParticleTexture, createRainParticleTexture } from './textures';
 import { buildGwanghwamun } from './models/gwanghwamun';
 import { buildGeunjeongjeon } from './models/geunjeongjeon';
 import { buildGyeonghoeru } from './models/gyeonghoeru';
@@ -29,6 +30,21 @@ export class SceneManager {
   private hemiLight: THREE.HemisphereLight;
   private ambientLight: THREE.AmbientLight;
   private lanternLights: THREE.PointLight[] = [];
+
+  // Weather & Particle Systems
+  private currentWeather: WeatherEffect = 'clear';
+  private currentTimePreset: TimePreset = 'day';
+  private snowParticles: THREE.Points | null = null;
+  private snowGeometry: THREE.BufferGeometry | null = null;
+  private snowPositions: Float32Array | null = null;
+  private snowVelocities: Float32Array | null = null;
+  private snowTexture: THREE.CanvasTexture | null = null;
+
+  private rainParticles: THREE.Points | null = null;
+  private rainGeometry: THREE.BufferGeometry | null = null;
+  private rainPositions: Float32Array | null = null;
+  private rainVelocities: Float32Array | null = null;
+  private rainTexture: THREE.CanvasTexture | null = null;
 
   // Animation & Transition state
   private isDestroyed = false;
@@ -135,6 +151,9 @@ export class SceneManager {
     // Build Entire Joseon Palace Realm
     this.buildWorld();
 
+    // Weather & Environmental Particle Systems
+    this.initWeatherParticleSystems();
+
     // Event Listeners
     window.addEventListener('resize', this.handleResize);
     this.renderer.domElement.addEventListener('pointerdown', this.handlePointerDown);
@@ -239,6 +258,184 @@ export class SceneManager {
     });
   }
 
+  private initWeatherParticleSystems() {
+    // 1. Snow Particle System (함박눈)
+    const snowCount = 2800;
+    this.snowPositions = new Float32Array(snowCount * 3);
+    this.snowVelocities = new Float32Array(snowCount * 3);
+
+    for (let i = 0; i < snowCount; i++) {
+      const i3 = i * 3;
+      this.snowPositions[i3] = (Math.random() - 0.5) * 260; // X
+      this.snowPositions[i3 + 1] = Math.random() * 68 + 1; // Y
+      this.snowPositions[i3 + 2] = (Math.random() - 0.5) * 300; // Z
+
+      // [fallSpeed, swaySpeed, phase]
+      this.snowVelocities[i3] = 2.5 + Math.random() * 3.0;
+      this.snowVelocities[i3 + 1] = 0.8 + Math.random() * 1.5;
+      this.snowVelocities[i3 + 2] = Math.random() * Math.PI * 2;
+    }
+
+    this.snowGeometry = new THREE.BufferGeometry();
+    this.snowGeometry.setAttribute('position', new THREE.BufferAttribute(this.snowPositions, 3));
+
+    this.snowTexture = createSnowParticleTexture();
+    const snowMaterial = new THREE.PointsMaterial({
+      size: 1.8,
+      map: this.snowTexture,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    this.snowParticles = new THREE.Points(this.snowGeometry, snowMaterial);
+    this.snowParticles.visible = false;
+    this.scene.add(this.snowParticles);
+
+    // 2. Light Rain Particle System (가랑비)
+    const rainCount = 4200;
+    this.rainPositions = new Float32Array(rainCount * 3);
+    this.rainVelocities = new Float32Array(rainCount * 3);
+
+    for (let i = 0; i < rainCount; i++) {
+      const i3 = i * 3;
+      this.rainPositions[i3] = (Math.random() - 0.5) * 240;
+      this.rainPositions[i3 + 1] = Math.random() * 68 + 1;
+      this.rainPositions[i3 + 2] = (Math.random() - 0.5) * 280;
+
+      // [fallSpeed, driftX, driftZ]
+      this.rainVelocities[i3] = 45.0 + Math.random() * 15.0;
+      this.rainVelocities[i3 + 1] = -4.0 - Math.random() * 3.0;
+      this.rainVelocities[i3 + 2] = -2.0 - Math.random() * 2.0;
+    }
+
+    this.rainGeometry = new THREE.BufferGeometry();
+    this.rainGeometry.setAttribute('position', new THREE.BufferAttribute(this.rainPositions, 3));
+
+    this.rainTexture = createRainParticleTexture();
+    const rainMaterial = new THREE.PointsMaterial({
+      size: 2.2,
+      map: this.rainTexture,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+    });
+
+    this.rainParticles = new THREE.Points(this.rainGeometry, rainMaterial);
+    this.rainParticles.visible = false;
+    this.scene.add(this.rainParticles);
+  }
+
+  private updateWeather(dt: number, timeSec: number) {
+    if (this.currentWeather === 'clear') return;
+
+    if (this.currentWeather === 'snow' && this.snowPositions && this.snowVelocities && this.snowGeometry) {
+      const count = this.snowPositions.length / 3;
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const fallSpeed = this.snowVelocities[i3];
+        const swayFreq = this.snowVelocities[i3 + 1];
+        const phase = this.snowVelocities[i3 + 2];
+
+        this.snowPositions[i3 + 1] -= fallSpeed * dt;
+        this.snowPositions[i3] += Math.sin(timeSec * swayFreq + phase) * 0.9 * dt;
+        this.snowPositions[i3 + 2] += Math.cos(timeSec * swayFreq * 0.8 + phase) * 0.6 * dt;
+
+        if (this.snowPositions[i3 + 1] < 0.2) {
+          this.snowPositions[i3 + 1] = 68.0;
+          this.snowPositions[i3] = (Math.random() - 0.5) * 260;
+          this.snowPositions[i3 + 2] = (Math.random() - 0.5) * 300;
+        }
+      }
+      this.snowGeometry.attributes.position.needsUpdate = true;
+    } else if (this.currentWeather === 'rain' && this.rainPositions && this.rainVelocities && this.rainGeometry) {
+      const count = this.rainPositions.length / 3;
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const fallSpeed = this.rainVelocities[i3];
+        const driftX = this.rainVelocities[i3 + 1];
+        const driftZ = this.rainVelocities[i3 + 2];
+
+        this.rainPositions[i3 + 1] -= fallSpeed * dt;
+        this.rainPositions[i3] += driftX * dt;
+        this.rainPositions[i3 + 2] += driftZ * dt;
+
+        if (this.rainPositions[i3 + 1] < 0.2) {
+          this.rainPositions[i3 + 1] = 68.0;
+          this.rainPositions[i3] = (Math.random() - 0.5) * 240;
+          this.rainPositions[i3 + 2] = (Math.random() - 0.5) * 280;
+        }
+      }
+      this.rainGeometry.attributes.position.needsUpdate = true;
+    }
+  }
+
+  public setWeather(weather: WeatherEffect) {
+    this.currentWeather = weather;
+
+    if (this.snowParticles) {
+      this.snowParticles.visible = weather === 'snow';
+    }
+    if (this.rainParticles) {
+      this.rainParticles.visible = weather === 'rain';
+    }
+
+    this.applyAtmosphere();
+  }
+
+  private applyAtmosphere() {
+    const config = getLightingPreset(this.currentTimePreset);
+
+    if (this.currentWeather === 'snow') {
+      this.scene.background = new THREE.Color(0xdce7f2);
+      if (this.scene.fog instanceof THREE.Fog) {
+        this.scene.fog.color.setHex(0xdce7f2);
+        this.scene.fog.near = 40;
+        this.scene.fog.far = 280;
+      }
+      this.sunLight.intensity = config.sunIntensity * 0.75;
+      this.ambientLight.intensity = Math.max(config.ambientIntensity, 0.45);
+      this.renderer.toneMappingExposure = Math.min(config.exposure * 1.05, 1.25);
+    } else if (this.currentWeather === 'rain') {
+      this.scene.background = new THREE.Color(0x9aa8b5);
+      if (this.scene.fog instanceof THREE.Fog) {
+        this.scene.fog.color.setHex(0x9aa8b5);
+        this.scene.fog.near = 35;
+        this.scene.fog.far = 220;
+      }
+      this.sunLight.intensity = config.sunIntensity * 0.5;
+      this.ambientLight.intensity = Math.max(config.ambientIntensity, 0.4);
+      this.renderer.toneMappingExposure = config.exposure * 0.9;
+    } else {
+      this.sunLight.color.setHex(config.sunColor);
+      this.sunLight.intensity = config.sunIntensity;
+      this.sunLight.position.set(...config.sunPosition);
+
+      this.hemiLight.color.setHex(config.hemiSkyColor);
+      this.hemiLight.groundColor.setHex(config.hemiGroundColor);
+      this.hemiLight.intensity = config.hemiIntensity;
+
+      this.ambientLight.intensity = config.ambientIntensity;
+
+      this.scene.background = new THREE.Color(config.fogColor);
+      if (this.scene.fog instanceof THREE.Fog) {
+        this.scene.fog.color.setHex(config.fogColor);
+        this.scene.fog.near = config.fogNear;
+        this.scene.fog.far = config.fogFar;
+      }
+
+      this.renderer.toneMappingExposure = config.exposure;
+    }
+
+    this.lanternLights.forEach((light) => {
+      light.intensity = this.currentWeather !== 'clear'
+        ? Math.max(config.lanternIntensity, 1.2)
+        : config.lanternIntensity;
+    });
+  }
+
   private handlePointerDown = (event: MouseEvent) => {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -266,31 +463,8 @@ export class SceneManager {
   };
 
   public setTimePreset(preset: TimePreset) {
-    const config = getLightingPreset(preset);
-
-    this.sunLight.color.setHex(config.sunColor);
-    this.sunLight.intensity = config.sunIntensity;
-    this.sunLight.position.set(...config.sunPosition);
-
-    this.hemiLight.color.setHex(config.hemiSkyColor);
-    this.hemiLight.groundColor.setHex(config.hemiGroundColor);
-    this.hemiLight.intensity = config.hemiIntensity;
-
-    this.ambientLight.intensity = config.ambientIntensity;
-
-    this.scene.background = new THREE.Color(config.fogColor);
-    if (this.scene.fog instanceof THREE.Fog) {
-      this.scene.fog.color.setHex(config.fogColor);
-      this.scene.fog.near = config.fogNear;
-      this.scene.fog.far = config.fogFar;
-    }
-
-    this.renderer.toneMappingExposure = config.exposure;
-
-    // Toggle warm royal lanterns for night/evening
-    this.lanternLights.forEach((light) => {
-      light.intensity = config.lanternIntensity;
-    });
+    this.currentTimePreset = preset;
+    this.applyAtmosphere();
   }
 
   public setRenderingMode(mode: RenderingMode) {
@@ -357,6 +531,9 @@ export class SceneManager {
       }
     }
 
+    // Update environmental weather particles (snow or rain)
+    this.updateWeather(dt, now * 0.001);
+
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
 
@@ -389,6 +566,21 @@ export class SceneManager {
     clearTimeout(this.frameId);
     window.removeEventListener('resize', this.handleResize);
     this.renderer.domElement.removeEventListener('pointerdown', this.handlePointerDown);
+
+    // Dispose Weather Particle Systems
+    if (this.snowGeometry) this.snowGeometry.dispose();
+    if (this.snowParticles) {
+      (this.snowParticles.material as THREE.Material).dispose();
+      this.scene.remove(this.snowParticles);
+    }
+    if (this.snowTexture) this.snowTexture.dispose();
+
+    if (this.rainGeometry) this.rainGeometry.dispose();
+    if (this.rainParticles) {
+      (this.rainParticles.material as THREE.Material).dispose();
+      this.scene.remove(this.rainParticles);
+    }
+    if (this.rainTexture) this.rainTexture.dispose();
 
     this.controls.dispose();
     this.materials.dispose();

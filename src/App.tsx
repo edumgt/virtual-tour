@@ -4,7 +4,7 @@ import { HeaderBar } from './components/HeaderBar';
 import { NavigationDock } from './components/NavigationDock';
 import { HeritageModal } from './components/HeritageModal';
 import { LANDMARKS } from './data/landmarks';
-import { TimePreset, RenderingMode, LandmarkInfo } from './types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from './types';
 import { soundController } from './audio/traditionalAudio';
 
 export default function App() {
@@ -14,6 +14,7 @@ export default function App() {
   const [selectedLandmarkId, setSelectedLandmarkId] = useState<string>('gwanghwamun');
   const [timePreset, setTimePreset] = useState<TimePreset>('day');
   const [renderingMode, setRenderingMode] = useState<RenderingMode>('pbr');
+  const [weather, setWeather] = useState<WeatherEffect>('clear');
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(false);
   const [isInfoOpen, setIsInfoOpen] = useState<boolean>(false);
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
@@ -67,6 +68,14 @@ export default function App() {
     setTimePreset(preset);
     if (sceneManagerRef.current) {
       sceneManagerRef.current.setTimePreset(preset);
+    }
+  };
+
+  // Handle Weather Preset Change
+  const handleSetWeather = (newWeather: WeatherEffect) => {
+    setWeather(newWeather);
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.setWeather(newWeather);
     }
   };
 
@@ -137,6 +146,8 @@ export default function App() {
         onSetTimePreset={handleSetTimePreset}
         renderingMode={renderingMode}
         onSetRenderingMode={handleSetRenderingMode}
+        weather={weather}
+        onSetWeather={handleSetWeather}
         lang={lang}
       />
 

@@ -2,6 +2,8 @@ export type TimePreset = 'day' | 'sunset' | 'night' | 'dawn';
 
 export type RenderingMode = 'pbr' | 'architectural' | 'night_lanterns';
 
+export type WeatherEffect = 'clear' | 'snow' | 'rain';
+
 export interface LandmarkInfo {
   id: string;
   nameKo: string;
