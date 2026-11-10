@@ -4,6 +4,15 @@ export type RenderingMode = 'pbr' | 'architectural' | 'night_lanterns';
 
 export type WeatherEffect = 'clear' | 'snow' | 'rain';
 
+export type VrMode = 'none' | 'webxr' | 'cardboard';
+
+export interface VrState {
+  isPresenting: boolean;
+  mode: VrMode;
+  isSupported?: boolean;
+  error?: string | null;
+}
+
 export interface LandmarkInfo {
   id: string;
   nameKo: string;

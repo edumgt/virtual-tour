@@ -3,8 +3,10 @@ import { SceneManager } from './three/sceneManager';
 import { HeaderBar } from './components/HeaderBar';
 import { NavigationDock } from './components/NavigationDock';
 import { HeritageModal } from './components/HeritageModal';
+import { VrModeModal } from './components/VrModeModal';
+import { VrActiveOverlay } from './components/VrActiveOverlay';
 import { LANDMARKS } from './data/landmarks';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from './types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrState } from './types';
 import { soundController } from './audio/traditionalAudio';
 
 export default function App() {
@@ -17,8 +19,21 @@ export default function App() {
   const [weather, setWeather] = useState<WeatherEffect>('clear');
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(false);
   const [isInfoOpen, setIsInfoOpen] = useState<boolean>(false);
+  const [isVrModalOpen, setIsVrModalOpen] = useState<boolean>(false);
+  const [vrState, setVrState] = useState<VrState>({ isPresenting: false, mode: 'none' });
+  const [isWebXrSupported, setIsWebXrSupported] = useState<boolean>(false);
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
   const [showQuickGuide, setShowQuickGuide] = useState<boolean>(true);
+
+  // Check WebXR device capability on mount
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'xr' in navigator && navigator.xr) {
+      navigator.xr
+        .isSessionSupported('immersive-vr')
+        .then((supported) => setIsWebXrSupported(supported))
+        .catch(() => setIsWebXrSupported(false));
+    }
+  }, []);
 
   // Initialize Three.js scene once
   useEffect(() => {
@@ -30,6 +45,9 @@ export default function App() {
         setSelectedLandmarkId(id);
         setIsInfoOpen(true);
         soundController.playBell(840);
+      },
+      onVrStateChange: (state: VrState) => {
+        setVrState(state);
       },
     });
 
@@ -87,6 +105,49 @@ export default function App() {
     }
   };
 
+  // Handle VR Mode Triggers
+  const handleOpenVr = () => {
+    if (vrState.isPresenting) {
+      handleExitVr();
+    } else {
+      setIsVrModalOpen(true);
+      soundController.playGayageumNote(520);
+    }
+  };
+
+  const handleStartWebXr = async () => {
+    try {
+      if (sceneManagerRef.current) {
+        await sceneManagerRef.current.startWebXr();
+      }
+    } catch (err) {
+      console.warn('WebXR start attempt failed, falling back to Cardboard mode:', err);
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.startCardboard();
+      }
+    }
+  };
+
+  const handleStartCardboard = () => {
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.startCardboard();
+      soundController.playBell(740);
+    }
+  };
+
+  const handleExitVr = () => {
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.exitVr();
+    }
+  };
+
+  const handleTeleportInVr = (position: [number, number, number], target: [number, number, number]) => {
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.teleportVr(position, target);
+      soundController.playGayageumNote(440);
+    }
+  };
+
   // Handle Auto Rotation
   const handleToggleAutoRotate = () => {
     const nextVal = !isAutoRotate;
@@ -108,23 +169,27 @@ export default function App() {
       />
 
       {/* Header Bar */}
-      <HeaderBar
-        currentLandmarkName={lang === 'ko' ? currentLandmark.nameKo : currentLandmark.nameEn}
-        isAutoRotate={isAutoRotate}
-        onToggleAutoRotate={handleToggleAutoRotate}
-        onOpenInfo={() => setIsInfoOpen(true)}
-        lang={lang}
-        onToggleLang={() => setLang((prev) => (prev === 'ko' ? 'en' : 'ko'))}
-      />
+      {!vrState.isPresenting && (
+        <HeaderBar
+          currentLandmarkName={lang === 'ko' ? currentLandmark.nameKo : currentLandmark.nameEn}
+          isAutoRotate={isAutoRotate}
+          onToggleAutoRotate={handleToggleAutoRotate}
+          onOpenInfo={() => setIsInfoOpen(true)}
+          onOpenVr={handleOpenVr}
+          isVrActive={vrState.isPresenting}
+          lang={lang}
+          onToggleLang={() => setLang((prev) => (prev === 'ko' ? 'en' : 'ko'))}
+        />
+      )}
 
       {/* Interaction Floating Banner / Guide Pill */}
-      {showQuickGuide && (
+      {showQuickGuide && !vrState.isPresenting && (
         <div className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[92vw] max-w-md sm:max-w-xl">
           <div className="bg-stone-900/95 text-amber-200 text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-amber-600/50 shadow-xl flex items-center justify-between gap-2">
             <span className="truncate">
               {lang === 'ko'
-                ? '💡 마우스 드래그로 360° 회전 · 휠로 줌인/아웃 · 황금빛 링 마커 클릭'
-                : '💡 Drag to rotate 360° · Scroll to zoom · Click golden ring markers'}
+                ? '💡 마우스 드래그로 360° 회전 · 휠로 줌인/아웃 · VR 모드로 헤드셋/카드보드 체험'
+                : '💡 Drag to rotate 360° · Scroll to zoom · VR mode for headset/cardboard'}
             </span>
             <button
               onClick={() => setShowQuickGuide(false)}
@@ -138,16 +203,38 @@ export default function App() {
       )}
 
       {/* Bottom Collapsible Navigation Dock */}
-      <NavigationDock
-        landmarks={LANDMARKS}
-        selectedLandmarkId={selectedLandmarkId}
-        onSelectLandmark={handleSelectLandmark}
-        timePreset={timePreset}
-        onSetTimePreset={handleSetTimePreset}
-        renderingMode={renderingMode}
-        onSetRenderingMode={handleSetRenderingMode}
-        weather={weather}
-        onSetWeather={handleSetWeather}
+      {!vrState.isPresenting && (
+        <NavigationDock
+          landmarks={LANDMARKS}
+          selectedLandmarkId={selectedLandmarkId}
+          onSelectLandmark={handleSelectLandmark}
+          timePreset={timePreset}
+          onSetTimePreset={handleSetTimePreset}
+          renderingMode={renderingMode}
+          onSetRenderingMode={handleSetRenderingMode}
+          weather={weather}
+          onSetWeather={handleSetWeather}
+          onOpenVr={handleOpenVr}
+          isVrActive={vrState.isPresenting}
+          lang={lang}
+        />
+      )}
+
+      {/* In-VR Active HUD Overlay (Exit VR & Teleport Controls) */}
+      <VrActiveOverlay
+        vrMode={vrState.mode}
+        onExitVr={handleExitVr}
+        onTeleport={handleTeleportInVr}
+        lang={lang}
+      />
+
+      {/* VR Mode Selection & Guidance Modal */}
+      <VrModeModal
+        isOpen={isVrModalOpen}
+        onClose={() => setIsVrModalOpen(false)}
+        onStartWebXr={handleStartWebXr}
+        onStartCardboard={handleStartCardboard}
+        isWebXrSupported={isWebXrSupported}
         lang={lang}
       />
 

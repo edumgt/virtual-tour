@@ -14,6 +14,7 @@ import {
   Camera,
   Snowflake,
   CloudRain,
+  Glasses,
 } from 'lucide-react';
 import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from '../types';
 import { soundController } from '../audio/traditionalAudio';
@@ -28,6 +29,8 @@ interface NavigationDockProps {
   onSetRenderingMode: (mode: RenderingMode) => void;
   weather: WeatherEffect;
   onSetWeather: (weather: WeatherEffect) => void;
+  onOpenVr?: () => void;
+  isVrActive?: boolean;
   lang: 'ko' | 'en';
 }
 
@@ -41,6 +44,8 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
   onSetRenderingMode,
   weather,
   onSetWeather,
+  onOpenVr,
+  isVrActive = false,
   lang,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -234,6 +239,23 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                 <Bell className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{lang === 'ko' ? '타종음' : 'Chime'}</span>
               </button>
+
+              {/* Quick VR Mode Button */}
+              {onOpenVr && (
+                <button
+                  onClick={onOpenVr}
+                  data-testid="dock-vr-button"
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors shrink-0 ${
+                    isVrActive
+                      ? 'bg-cyan-600 text-white font-medium border-cyan-400 shadow'
+                      : 'bg-stone-800 hover:bg-stone-750 text-cyan-300 border-stone-700/60'
+                  }`}
+                  title={lang === 'ko' ? 'WebXR & 카드보드 VR 모드' : 'WebXR & Cardboard VR Mode'}
+                >
+                  <Glasses className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline">{lang === 'ko' ? 'VR' : 'VR'}</span>
+                </button>
+              )}
             </div>
           </div>
 

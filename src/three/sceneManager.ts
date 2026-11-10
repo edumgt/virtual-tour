@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from '../types';
+import { StereoEffect } from 'three/examples/jsm/effects/StereoEffect.js';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState } from '../types';
 import { getLightingPreset, dampVector3 } from '../utils/rules';
 import { initPalaceMaterials, PalaceMaterials } from './materials';
 import { createSnowParticleTexture, createRainParticleTexture } from './textures';
@@ -14,6 +15,7 @@ import { buildSurroundings } from './models/surroundings';
 export interface SceneManagerOptions {
   container: HTMLDivElement;
   onLandmarkSelect: (landmarkId: string) => void;
+  onVrStateChange?: (state: VrState) => void;
 }
 
 export class SceneManager {
@@ -21,9 +23,18 @@ export class SceneManager {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
+  private cameraDolly: THREE.Group;
   private controls: OrbitControls;
   private materials: PalaceMaterials;
   private isSoftwareGl: boolean;
+
+  // VR & WebXR state
+  private stereoEffect: StereoEffect | null = null;
+  private currentVrMode: VrMode = 'none';
+  private xrSession: XRSession | null = null;
+  private onVrStateChange?: (state: VrState) => void;
+  private deviceOrientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
+  private deviceEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 
   // Lighting elements
   private sunLight: THREE.DirectionalLight;
@@ -66,6 +77,7 @@ export class SceneManager {
   constructor(options: SceneManagerOptions) {
     this.container = options.container;
     this.onLandmarkSelect = options.onLandmarkSelect;
+    this.onVrStateChange = options.onVrStateChange;
 
     // Detect software WebGL
     this.isSoftwareGl = (() => {
@@ -93,6 +105,11 @@ export class SceneManager {
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.container.appendChild(this.renderer.domElement);
 
+    // Enable WebXR support
+    this.renderer.xr.enabled = true;
+    this.stereoEffect = new StereoEffect(this.renderer);
+    this.stereoEffect.setEyeSeparation(0.064);
+
     // Scene & Environment
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xd8e8f8);
@@ -102,10 +119,15 @@ export class SceneManager {
     this.scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     pmremGenerator.dispose();
 
-    // Camera
+    // Camera & WebXR Dolly Rig
     const aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera = new THREE.PerspectiveCamera(48, aspect, 0.5, 900);
     this.camera.position.set(0, 12, 48);
+
+    this.cameraDolly = new THREE.Group();
+    this.cameraDolly.name = 'CameraDolly';
+    this.scene.add(this.cameraDolly);
+    this.cameraDolly.add(this.camera);
 
     // Controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -115,6 +137,26 @@ export class SceneManager {
     this.controls.minDistance = 3;
     this.controls.maxDistance = 240;
     this.controls.target.set(0, 5, 0);
+
+    // WebXR Session lifecycle listeners
+    this.renderer.xr.addEventListener('sessionstart', () => {
+      this.currentVrMode = 'webxr';
+      this.controls.enabled = false;
+      this.onVrStateChange?.({ isPresenting: true, mode: 'webxr' });
+    });
+
+    this.renderer.xr.addEventListener('sessionend', () => {
+      this.currentVrMode = 'none';
+      this.xrSession = null;
+      this.controls.enabled = true;
+      this.cameraDolly.position.set(0, 0, 0);
+      this.renderer.setAnimationLoop(null);
+      this.onVrStateChange?.({ isPresenting: false, mode: 'none' });
+      this.lastTime = performance.now();
+      if (!this.isSoftwareGl && !this.frameId) {
+        this.tick();
+      }
+    });
 
     // Cancel camera transitions on manual user drag
     this.controls.addEventListener('start', () => {
@@ -437,6 +479,8 @@ export class SceneManager {
   }
 
   private handlePointerDown = (event: MouseEvent) => {
+    if (this.currentVrMode !== 'none') return;
+
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -460,6 +504,9 @@ export class SceneManager {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
+    if (this.stereoEffect) {
+      this.stereoEffect.setSize(width, height);
+    }
   };
 
   public setTimePreset(preset: TimePreset) {
@@ -491,15 +538,181 @@ export class SceneManager {
     this.controls.autoRotateSpeed = 1.0;
   }
 
-  private tick = () => {
+  // ==========================================
+  // WebXR & Cardboard VR Methods
+  // ==========================================
+
+  public async isWebXrSupported(): Promise<boolean> {
+    if (typeof navigator === 'undefined' || !('xr' in navigator) || !navigator.xr) {
+      return false;
+    }
+    try {
+      return await navigator.xr.isSessionSupported('immersive-vr');
+    } catch {
+      return false;
+    }
+  }
+
+  public async startWebXr(): Promise<boolean> {
+    if (typeof navigator === 'undefined' || !('xr' in navigator) || !navigator.xr) {
+      throw new Error('이 브라우저는 WebXR API를 지원하지 않습니다.');
+    }
+
+    const isSupported = await navigator.xr.isSessionSupported('immersive-vr');
+    if (!isSupported) {
+      throw new Error('연결된 WebXR VR 헤드셋 장치를 찾을 수 없습니다.');
+    }
+
+    const sessionInit: XRSessionInit = {
+      optionalFeatures: ['local-floor', 'bounded-floor', 'layers'],
+    };
+
+    const session = await navigator.xr.requestSession('immersive-vr', sessionInit);
+    this.xrSession = session;
+
+    session.addEventListener('end', () => {
+      this.currentVrMode = 'none';
+      this.xrSession = null;
+      this.controls.enabled = true;
+      this.cameraDolly.position.set(0, 0, 0);
+      this.renderer.setAnimationLoop(null);
+      this.onVrStateChange?.({ isPresenting: false, mode: 'none' });
+      this.lastTime = performance.now();
+      if (!this.isSoftwareGl) {
+        this.frameId = requestAnimationFrame(this.tick);
+      }
+    });
+
+    try {
+      await this.renderer.xr.setReferenceSpaceType('local-floor');
+    } catch {
+      await this.renderer.xr.setReferenceSpaceType('local').catch(() => {});
+    }
+
+    await this.renderer.xr.setSession(session);
+
+    // Place camera dolly at human eye level standing on Gwanghwamun Woldae
+    this.cameraDolly.position.set(0, 0, 24);
+    this.camera.position.set(0, 1.6, 0);
+
+    this.currentVrMode = 'webxr';
+    this.controls.enabled = false;
+    this.onVrStateChange?.({ isPresenting: true, mode: 'webxr' });
+
+    // WebXR frames are driven via setAnimationLoop
+    this.renderer.setAnimationLoop(this.tick);
+    return true;
+  }
+
+  public startCardboard(): void {
+    if (this.currentVrMode === 'cardboard') return;
+
+    this.currentVrMode = 'cardboard';
+    this.controls.enabled = true;
+
+    // Position camera at human eye height on Gwanghwamun Woldae facing the gatehouse
+    this.cameraDolly.position.set(0, 0, 0);
+    this.camera.position.set(0, 1.65, 24);
+    this.controls.target.set(0, 4.5, 0);
+    this.controls.update();
+
+    if (this.stereoEffect) {
+      this.stereoEffect.setSize(this.container.clientWidth, this.container.clientHeight);
+    }
+
+    // Attach device orientation for mobile Cardboard head-tracking
+    if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
+      const DeviceOrientationEventAny = window.DeviceOrientationEvent as any;
+      if (typeof DeviceOrientationEventAny.requestPermission === 'function') {
+        DeviceOrientationEventAny.requestPermission().catch(() => {});
+      }
+
+      this.deviceOrientationHandler = (event: DeviceOrientationEvent) => {
+        if (this.currentVrMode !== 'cardboard') return;
+        if (event.alpha === null || event.beta === null || event.gamma === null) return;
+
+        const alpha = THREE.MathUtils.degToRad(event.alpha);
+        const beta = THREE.MathUtils.degToRad(event.beta);
+        const gamma = THREE.MathUtils.degToRad(event.gamma);
+        const orient = typeof window.orientation !== 'undefined'
+          ? THREE.MathUtils.degToRad(Number(window.orientation))
+          : 0;
+
+        this.deviceEuler.set(beta, alpha, -gamma, 'YXZ');
+        this.camera.quaternion.setFromEuler(this.deviceEuler);
+        const qScreen = new THREE.Quaternion();
+        qScreen.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -orient);
+        this.camera.quaternion.multiply(qScreen);
+      };
+
+      window.addEventListener('deviceorientation', this.deviceOrientationHandler, true);
+    }
+
+    // Attempt fullscreen for immersive mobile viewing
+    if (this.container.requestFullscreen) {
+      this.container.requestFullscreen().catch(() => {});
+    }
+
+    this.onVrStateChange?.({ isPresenting: true, mode: 'cardboard' });
+  }
+
+  public exitVr(): void {
+    if (this.currentVrMode === 'webxr' && this.xrSession) {
+      this.xrSession.end().catch(() => {});
+      return;
+    }
+
+    if (this.currentVrMode === 'cardboard') {
+      this.currentVrMode = 'none';
+      if (this.deviceOrientationHandler) {
+        window.removeEventListener('deviceorientation', this.deviceOrientationHandler, true);
+        this.deviceOrientationHandler = null;
+      }
+      if (typeof document !== 'undefined' && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+
+      // Reset renderer viewport and scissor
+      this.renderer.setScissorTest(false);
+      this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+
+      // Restore camera to panoramic overview
+      this.camera.position.set(0, 12, 48);
+      this.controls.target.set(0, 5, 0);
+      this.controls.update();
+
+      this.onVrStateChange?.({ isPresenting: false, mode: 'none' });
+    }
+  }
+
+  public teleportVr(position: [number, number, number], target: [number, number, number]): void {
+    if (this.currentVrMode === 'webxr') {
+      // Move dolly in world space so headset maintains relative 6DoF
+      this.cameraDolly.position.set(position[0], position[1], position[2]);
+    } else {
+      this.camera.position.set(position[0], position[1] + 1.65, position[2]);
+      this.controls.target.set(target[0], target[1], target[2]);
+      this.controls.update();
+    }
+  }
+
+  public getVrMode(): VrMode {
+    return this.currentVrMode;
+  }
+
+  // ==========================================
+  // Render Loop
+  // ==========================================
+
+  private tick = (_timestamp?: number, _frame?: XRFrame) => {
     if (this.isDestroyed) return;
 
     const now = performance.now();
     const dt = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
 
-    // Smooth exponential damped camera transition
-    if (this.isTransitioning && this.targetCamPos && this.targetLookAt) {
+    // Smooth exponential damped camera transition (when not in WebXR presenting)
+    if (!this.renderer.xr.isPresenting && this.isTransitioning && this.targetCamPos && this.targetLookAt) {
       const currentPos: [number, number, number] = [
         this.camera.position.x,
         this.camera.position.y,
@@ -534,8 +747,19 @@ export class SceneManager {
     // Update environmental weather particles (snow or rain)
     this.updateWeather(dt, now * 0.001);
 
-    this.controls.update();
-    this.renderer.render(this.scene, this.camera);
+    if (this.renderer.xr.isPresenting) {
+      // In WebXR presenting mode, Three.js internal XRManager renders stereoscopic views
+      this.renderer.render(this.scene, this.camera);
+      return;
+    } else if (this.currentVrMode === 'cardboard' && this.stereoEffect) {
+      if (!this.deviceOrientationHandler) {
+        this.controls.update();
+      }
+      this.stereoEffect.render(this.scene, this.camera);
+    } else {
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    }
 
     if (this.isSoftwareGl) {
       this.afterDraw(this.tick);
@@ -564,6 +788,18 @@ export class SceneManager {
     this.isDestroyed = true;
     cancelAnimationFrame(this.frameId);
     clearTimeout(this.frameId);
+    this.renderer.setAnimationLoop(null);
+
+    if (this.xrSession) {
+      this.xrSession.end().catch(() => {});
+      this.xrSession = null;
+    }
+
+    if (this.deviceOrientationHandler) {
+      window.removeEventListener('deviceorientation', this.deviceOrientationHandler, true);
+      this.deviceOrientationHandler = null;
+    }
+
     window.removeEventListener('resize', this.handleResize);
     this.renderer.domElement.removeEventListener('pointerdown', this.handlePointerDown);
 

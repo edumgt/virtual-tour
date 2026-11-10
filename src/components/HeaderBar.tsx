@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Compass, BookOpen, SunMedium, Moon, Languages } from 'lucide-react';
+import { Volume2, VolumeX, Compass, BookOpen, SunMedium, Moon, Languages, Glasses } from 'lucide-react';
 import { soundController } from '../audio/traditionalAudio';
 
 interface HeaderBarProps {
@@ -7,6 +7,8 @@ interface HeaderBarProps {
   isAutoRotate: boolean;
   onToggleAutoRotate: () => void;
   onOpenInfo: () => void;
+  onOpenVr: () => void;
+  isVrActive: boolean;
   lang: 'ko' | 'en';
   onToggleLang: () => void;
 }
@@ -16,6 +18,8 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   isAutoRotate,
   onToggleAutoRotate,
   onOpenInfo,
+  onOpenVr,
+  isVrActive,
   lang,
   onToggleLang,
 }) => {
@@ -85,6 +89,23 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           <Compass className="w-3.5 h-3.5" />
           <span className="hidden md:inline">
             {lang === 'ko' ? (isAutoRotate ? '회전 중' : '자율 투어') : 'Auto Tour'}
+          </span>
+        </button>
+
+        {/* Immersive VR Mode Trigger Button */}
+        <button
+          onClick={onOpenVr}
+          data-testid="vr-mode-button"
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-colors ${
+            isVrActive
+              ? 'bg-cyan-600 text-white font-medium shadow-md ring-1 ring-cyan-300'
+              : 'bg-stone-800 hover:bg-stone-700 text-cyan-300 hover:text-cyan-200'
+          }`}
+          title={lang === 'ko' ? 'WebXR & 카드보드 VR 모드' : 'WebXR & Cardboard VR Mode'}
+        >
+          <Glasses className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden md:inline font-medium">
+            {lang === 'ko' ? (isVrActive ? 'VR 종료' : 'VR 모드') : isVrActive ? 'Exit VR' : 'VR Mode'}
           </span>
         </button>
 
