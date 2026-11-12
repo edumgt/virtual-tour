@@ -13,6 +13,10 @@ import {
   createDragonCeilingTexture,
   createGableHapgakTexture,
   createIronBandTexture,
+  createModernGlassFacadeTexture,
+  createKyoboFacadeTexture,
+  createGovernmentFacadeTexture,
+  createAsphaltRoadTexture,
 } from './textures';
 
 export interface PalaceMaterials {
@@ -40,6 +44,13 @@ export interface PalaceMaterials {
   gableHapgak: THREE.MeshStandardMaterial;
   ironBand: THREE.MeshStandardMaterial;
   dumuBronze: THREE.MeshStandardMaterial;
+  // Modern Architecture & Streetscape
+  modernGlass: THREE.MeshStandardMaterial;
+  kyoboFacade: THREE.MeshStandardMaterial;
+  modernGovernment: THREE.MeshStandardMaterial;
+  asphaltRoad: THREE.MeshStandardMaterial;
+  modernConcrete: THREE.MeshStandardMaterial;
+  modernMullion: THREE.MeshStandardMaterial;
   wireframeMode: boolean;
   dispose: () => void;
 }
@@ -76,6 +87,16 @@ export function initPalaceMaterials(): PalaceMaterials {
   const dragonCeilingTex = createDragonCeilingTexture();
   const gableHapgakTex = createGableHapgakTexture();
   const ironBandTex = createIronBandTexture();
+
+  // Modern Architecture Textures
+  const modernGlassTex = createModernGlassFacadeTexture();
+  modernGlassTex.repeat.set(2, 4);
+  const kyoboTex = createKyoboFacadeTexture();
+  kyoboTex.repeat.set(2, 4);
+  const governmentTex = createGovernmentFacadeTexture();
+  governmentTex.repeat.set(2, 4);
+  const asphaltTex = createAsphaltRoadTexture();
+  asphaltTex.repeat.set(1, 6);
 
   const giwaRoof = new THREE.MeshStandardMaterial({
     map: giwaTex,
@@ -245,6 +266,48 @@ export function initPalaceMaterials(): PalaceMaterials {
     metalness: 0.75,
   });
 
+  // Modern Buildings & Streetscape Materials
+  const modernGlass = new THREE.MeshStandardMaterial({
+    map: modernGlassTex,
+    color: 0xffffff,
+    roughness: 0.15,
+    metalness: 0.82,
+    envMapIntensity: 1.4,
+  });
+
+  const kyoboFacade = new THREE.MeshStandardMaterial({
+    map: kyoboTex,
+    color: 0xffffff,
+    roughness: 0.65,
+    metalness: 0.08,
+  });
+
+  const modernGovernment = new THREE.MeshStandardMaterial({
+    map: governmentTex,
+    color: 0xffffff,
+    roughness: 0.58,
+    metalness: 0.05,
+  });
+
+  const asphaltRoad = new THREE.MeshStandardMaterial({
+    map: asphaltTex,
+    color: 0xffffff,
+    roughness: 0.88,
+    metalness: 0.02,
+  });
+
+  const modernConcrete = new THREE.MeshStandardMaterial({
+    color: 0xdde2e8,
+    roughness: 0.72,
+    metalness: 0.04,
+  });
+
+  const modernMullion = new THREE.MeshStandardMaterial({
+    color: 0x1f232b,
+    roughness: 0.35,
+    metalness: 0.75,
+  });
+
   const allMaterials = [
     giwaRoof,
     dancheong,
@@ -270,6 +333,12 @@ export function initPalaceMaterials(): PalaceMaterials {
     gableHapgak,
     ironBand,
     dumuBronze,
+    modernGlass,
+    kyoboFacade,
+    modernGovernment,
+    asphaltRoad,
+    modernConcrete,
+    modernMullion,
   ];
 
   return {
@@ -297,6 +366,12 @@ export function initPalaceMaterials(): PalaceMaterials {
     gableHapgak,
     ironBand,
     dumuBronze,
+    modernGlass,
+    kyoboFacade,
+    modernGovernment,
+    asphaltRoad,
+    modernConcrete,
+    modernMullion,
     wireframeMode: false,
     dispose: () => {
       allMaterials.forEach((m) => m.dispose());
@@ -313,6 +388,10 @@ export function initPalaceMaterials(): PalaceMaterials {
       dragonCeilingTex.dispose();
       gableHapgakTex.dispose();
       ironBandTex.dispose();
+      modernGlassTex.dispose();
+      kyoboTex.dispose();
+      governmentTex.dispose();
+      asphaltTex.dispose();
     },
   };
 }

@@ -111,17 +111,17 @@ export function distance3D(
 }
 
 /**
- * Bounds checking to clamp camera within Joseon palace viewing envelope
+ * Bounds checking to clamp camera within Joseon palace & Gwanghwamun modern viewing envelope
  */
 export function clampCameraPosition(
   pos: [number, number, number]
 ): [number, number, number] {
-  const minX = -120;
-  const maxX = 120;
+  const minX = -135;
+  const maxX = 135;
   const minY = 1.2;
-  const maxY = 130;
-  const minZ = -180;
-  const maxZ = 160;
+  const maxY = 150;
+  const minZ = -200;
+  const maxZ = 230;
 
   return [
     Math.max(minX, Math.min(maxX, pos[0])),

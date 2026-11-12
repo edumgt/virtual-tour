@@ -43,9 +43,9 @@ test('clampCameraPosition constrains values within allowable bounds', () => {
   assert.deepEqual(clampedInside, [10, 15, 20]);
 
   const clampedExtreme = clampCameraPosition([-500, 0.5, 999]);
-  assert.equal(clampedExtreme[0], -120);
+  assert.equal(clampedExtreme[0], -135);
   assert.equal(clampedExtreme[1], 1.2);
-  assert.equal(clampedExtreme[2], 160);
+  assert.equal(clampedExtreme[2], 230);
 });
 
 test('calculateEavesHeight computes authentic concave Korean slope with corner sweep', () => {

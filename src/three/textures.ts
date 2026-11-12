@@ -751,3 +751,224 @@ export function createRainParticleTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * Creates high-detail modern architectural glass curtain wall texture
+ * with reflective sky sheen and aluminum mullion grids.
+ */
+export function createModernGlassFacadeTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Deep architectural glass base (tinted blue-black)
+  ctx.fillStyle = '#1c2634';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Subtle sky reflection gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 512, 512);
+  skyGrad.addColorStop(0, '#2b3f5c');
+  skyGrad.addColorStop(0.5, '#1e2c3d');
+  skyGrad.addColorStop(1, '#151e2a');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Office floor grid: 8 floors x 8 window bays
+  const rows = 8;
+  const cols = 8;
+  const rowH = 512 / rows;
+  const colW = 512 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * colW;
+      const y = r * rowH;
+
+      // Dark window pane with glass reflection
+      const paneGrad = ctx.createLinearGradient(x, y, x + colW, y + rowH);
+      paneGrad.addColorStop(0, 'rgba(80, 130, 185, 0.45)');
+      paneGrad.addColorStop(0.3, 'rgba(40, 75, 120, 0.25)');
+      paneGrad.addColorStop(1, 'rgba(20, 40, 70, 0.6)');
+      ctx.fillStyle = paneGrad;
+      ctx.fillRect(x + 2, y + 2, colW - 4, rowH - 4);
+
+      // Random warm interior office light (15% chance of warm glow)
+      if ((r * 13 + c * 7) % 7 === 1) {
+        ctx.fillStyle = 'rgba(255, 230, 170, 0.35)';
+        ctx.fillRect(x + 6, y + 6, colW - 12, rowH - 12);
+      }
+
+      // Aluminum mullions (horizontal and vertical window frames)
+      ctx.strokeStyle = '#4a5568';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(x, y, colW, rowH);
+    }
+
+    // Heavy concrete floor spandrel band between storeys
+    ctx.fillStyle = '#2d3748';
+    ctx.fillRect(0, (r + 1) * rowH - 3, 512, 3);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates Kyobo Building iconic terracotta / reddish-brown granite grid texture
+ * designed by César Pelli at Gwanghwamun Intersection.
+ */
+export function createKyoboFacadeTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Warm terracotta brick-red base
+  ctx.fillStyle = '#853e34';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Subtle stone fleck texture
+  for (let i = 0; i < 400; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+  }
+
+  // 6 floors x 6 bays grid
+  const rows = 6;
+  const cols = 6;
+  const rowH = 512 / rows;
+  const colW = 512 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * colW;
+      const y = r * rowH;
+
+      // Recessed dark bronze-tinted glass window
+      ctx.fillStyle = '#181b22';
+      ctx.fillRect(x + 7, y + 8, colW - 14, rowH - 16);
+
+      // Glass reflection
+      const wGrad = ctx.createLinearGradient(x + 7, y + 8, x + colW - 7, y + rowH - 8);
+      wGrad.addColorStop(0, 'rgba(60, 80, 110, 0.4)');
+      wGrad.addColorStop(0.5, 'rgba(30, 40, 55, 0.1)');
+      wGrad.addColorStop(1, 'rgba(15, 20, 30, 0.5)');
+      ctx.fillStyle = wGrad;
+      ctx.fillRect(x + 7, y + 8, colW - 14, rowH - 16);
+
+      // Deep terracotta chamfered sill highlight
+      ctx.fillStyle = '#a64d42';
+      ctx.fillRect(x + 7, y + rowH - 10, colW - 14, 2);
+    }
+
+    // Heavy horizontal granite beam
+    ctx.fillStyle = '#6e3128';
+    ctx.fillRect(0, r * rowH, 512, 4);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates Government Complex Seoul (정부서울청사) monumental bureaucratic stone grid texture
+ */
+export function createGovernmentFacadeTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Light limestone / architectural concrete
+  ctx.fillStyle = '#dde2e8';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // 8 rows x 6 columns
+  const rows = 8;
+  const cols = 6;
+  const rowH = 512 / rows;
+  const colW = 512 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * colW;
+      const y = r * rowH;
+
+      // Vertical pilaster strip shadow
+      ctx.fillStyle = '#2c333e';
+      ctx.fillRect(x + 10, y + 6, colW - 20, rowH - 12);
+
+      // Glass tint
+      ctx.fillStyle = 'rgba(70, 95, 125, 0.5)';
+      ctx.fillRect(x + 12, y + 8, colW - 24, rowH - 16);
+
+      // White vertical stone pilasters
+      ctx.fillStyle = '#eef2f7';
+      ctx.fillRect(x, y, 6, rowH);
+    }
+
+    // Horizontal concrete floor spandrels
+    ctx.fillStyle = '#cbd2dc';
+    ctx.fillRect(0, r * rowH, 512, 4);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates asphalt roadway texture with lane markings and crosswalks
+ */
+export function createAsphaltRoadTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Dark charcoal asphalt
+  ctx.fillStyle = '#26282c';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Asphalt grain noise
+  for (let i = 0; i < 600; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.2)';
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+  }
+
+  // Yellow central double median lines
+  ctx.fillStyle = '#f5c518';
+  ctx.fillRect(253, 0, 2.5, 512);
+  ctx.fillRect(257, 0, 2.5, 512);
+
+  // White lane divider dashes (left and right)
+  ctx.fillStyle = '#ffffff';
+  for (let y = 0; y < 512; y += 40) {
+    // Left roadway lanes
+    ctx.fillRect(80, y, 2.5, 22);
+    ctx.fillRect(165, y, 2.5, 22);
+    // Right roadway lanes
+    ctx.fillRect(345, y, 2.5, 22);
+    ctx.fillRect(430, y, 2.5, 22);
+  }
+
+  // White boundary side curb lines
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(4, 0, 3, 512);
+  ctx.fillRect(505, 0, 3, 512);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+

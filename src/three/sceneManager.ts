@@ -11,6 +11,7 @@ import { buildGeunjeongjeon } from './models/geunjeongjeon';
 import { buildGyeonghoeru } from './models/gyeonghoeru';
 import { buildGwanghwamunSquare } from './models/gwanghwamunSquare';
 import { buildSurroundings } from './models/surroundings';
+import { buildModernCityscape } from './models/modernCityscape';
 
 export interface SceneManagerOptions {
   container: HTMLDivElement;
@@ -135,7 +136,7 @@ export class SceneManager {
     this.controls.dampingFactor = 0.05;
     this.controls.maxPolarAngle = Math.PI * 0.49; // Keep above ground plane
     this.controls.minDistance = 3;
-    this.controls.maxDistance = 240;
+    this.controls.maxDistance = 320;
     this.controls.target.set(0, 5, 0);
 
     // WebXR Session lifecycle listeners
@@ -206,11 +207,11 @@ export class SceneManager {
   }
 
   private buildWorld() {
-    // 1. Broad Terraced Palace Ground (대지 평면)
-    const groundGeo = new THREE.PlaneGeometry(360, 420);
+    // 1. Broad Terraced Palace & Modern City Ground (대지 평면)
+    const groundGeo = new THREE.PlaneGeometry(380, 500);
     const ground = new THREE.Mesh(groundGeo, this.materials.granite);
     ground.rotation.x = -Math.PI * 0.5;
-    ground.position.set(0, 0, -30);
+    ground.position.set(0, 0, 10);
     ground.receiveShadow = true;
     this.scene.add(ground);
 
@@ -221,14 +222,22 @@ export class SceneManager {
     squarePavement.receiveShadow = true;
     this.scene.add(squarePavement);
 
-    // 3. Landmark Models
+    // 3. Landmark Models (Historic Palace & Modern Cityscape)
     const gwanghwamun = buildGwanghwamun(this.materials);
     const geunjeongjeon = buildGeunjeongjeon(this.materials);
     const gyeonghoeru = buildGyeonghoeru(this.materials);
     const gwanghwamunSquare = buildGwanghwamunSquare(this.materials);
     const surroundings = buildSurroundings(this.materials);
+    const modernCityscape = buildModernCityscape(this.materials);
 
-    this.scene.add(gwanghwamun, geunjeongjeon, gyeonghoeru, gwanghwamunSquare, surroundings);
+    this.scene.add(
+      gwanghwamun,
+      geunjeongjeon,
+      gyeonghoeru,
+      gwanghwamunSquare,
+      surroundings,
+      modernCityscape
+    );
 
     // 4. Palace Night Lanterns
     const lanternSpots = [
@@ -243,7 +252,7 @@ export class SceneManager {
       this.lanternLights.push(pl);
     });
 
-    // 5. Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 마커)
+    // 5. Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 및 현대 랜드마크 마커)
     this.createDiscoveryMarkers();
   }
 
@@ -262,6 +271,12 @@ export class SceneManager {
       { id: 'bugaksan', pos: [0, 48, -190] },
       { id: 'cheoma_craft', pos: [6, 12.0, 4] },
       { id: 'hongyemun_vault', pos: [0, 4.0, 0] },
+      // Modern Architecture Landmarks
+      { id: 'gwanghwamun_crossroad', pos: [0, 8.0, 150] },
+      { id: 'kyobo_building', pos: [70, 36, 160] },
+      { id: 'sejong_center', pos: [-72, 16, 115] },
+      { id: 'gov_complex', pos: [-74, 26, 60] },
+      { id: 'history_museum', pos: [68, 18, 45] },
     ];
 
     const beaconGeo = new THREE.SphereGeometry(0.7, 12, 10);
@@ -586,7 +601,11 @@ export class SceneManager {
     try {
       await this.renderer.xr.setReferenceSpaceType('local-floor');
     } catch {
-      await this.renderer.xr.setReferenceSpaceType('local').catch(() => {});
+      try {
+        await this.renderer.xr.setReferenceSpaceType('local');
+      } catch {
+        // Fallback gracefully if not supported
+      }
     }
 
     await this.renderer.xr.setSession(session);

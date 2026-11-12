@@ -84,6 +84,20 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
         >
           {lang === 'ko' ? '경회루 연못' : 'Gyeonghoeru Lake'}
         </button>
+
+        <button
+          onClick={() => onTeleport([0, 0, 145], [0, 8, 120])}
+          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+        >
+          {lang === 'ko' ? '광화문 사거리' : 'Crossroad'}
+        </button>
+
+        <button
+          onClick={() => onTeleport([52, 0, 155], [70, 22, 160])}
+          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+        >
+          {lang === 'ko' ? '교보생명 빌딩' : 'Kyobo Building'}
+        </button>
       </div>
     </div>
   );
