@@ -6,13 +6,15 @@ import { HeritageModal } from './components/HeritageModal';
 import { VrModeModal } from './components/VrModeModal';
 import { VrActiveOverlay } from './components/VrActiveOverlay';
 import { LANDMARKS } from './data/landmarks';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrState } from './types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrState, SceneZone } from './types';
+import { filterLandmarksByZone, getZoneOverviewCamera } from './utils/rules';
 import { soundController } from './audio/traditionalAudio';
 
 export default function App() {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneManagerRef = useRef<SceneManager | null>(null);
 
+  const [activeZone, setActiveZone] = useState<SceneZone>('gwanghwamun');
   const [selectedLandmarkId, setSelectedLandmarkId] = useState<string>('gwanghwamun');
   const [timePreset, setTimePreset] = useState<TimePreset>('day');
   const [renderingMode, setRenderingMode] = useState<RenderingMode>('pbr');
@@ -34,6 +36,11 @@ export default function App() {
         .catch(() => setIsWebXrSupported(false));
     }
   }, []);
+
+  // Expose active zone on body for deterministic state inspection
+  useEffect(() => {
+    document.body.dataset.zone = activeZone;
+  }, [activeZone]);
 
   // Initialize Three.js scene once
   useEffect(() => {
@@ -64,6 +71,21 @@ export default function App() {
       sceneManagerRef.current = null;
     };
   }, []);
+
+  // Handle GNB Zone Switch
+  const handleSelectZone = (zone: SceneZone) => {
+    if (zone === activeZone) return;
+    setActiveZone(zone);
+    setIsInfoOpen(false);
+
+    const overview = getZoneOverviewCamera(zone);
+    setSelectedLandmarkId(overview.defaultLandmarkId);
+
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.setZone(zone);
+    }
+    soundController.playGayageumNote(zone === 'jamsil' ? 587 : 440);
+  };
 
   // Handle Landmark Navigation
   const handleSelectLandmark = (id: string) => {
@@ -157,7 +179,9 @@ export default function App() {
     }
   };
 
-  const currentLandmark = LANDMARKS.find((l) => l.id === selectedLandmarkId) || LANDMARKS[0];
+  const zoneLandmarks = filterLandmarksByZone(LANDMARKS, activeZone);
+  const currentLandmark =
+    LANDMARKS.find((l) => l.id === selectedLandmarkId) || zoneLandmarks[0] || LANDMARKS[0];
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-stone-950 font-sans select-none">
@@ -168,9 +192,11 @@ export default function App() {
         className="w-full h-full cursor-grab active:cursor-grabbing"
       />
 
-      {/* Header Bar */}
+      {/* Header Bar (GNB) */}
       {!vrState.isPresenting && (
         <HeaderBar
+          activeZone={activeZone}
+          onSelectZone={handleSelectZone}
           currentLandmarkName={lang === 'ko' ? currentLandmark.nameKo : currentLandmark.nameEn}
           isAutoRotate={isAutoRotate}
           onToggleAutoRotate={handleToggleAutoRotate}
@@ -184,12 +210,12 @@ export default function App() {
 
       {/* Interaction Floating Banner / Guide Pill */}
       {showQuickGuide && !vrState.isPresenting && (
-        <div className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[92vw] max-w-md sm:max-w-xl">
+        <div className="absolute top-28 lg:top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[92vw] max-w-md sm:max-w-xl">
           <div className="bg-stone-900/95 text-amber-200 text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-amber-600/50 shadow-xl flex items-center justify-between gap-2">
             <span className="truncate">
               {lang === 'ko'
-                ? '💡 마우스 드래그로 360° 회전 · 휠로 줌인/아웃 · VR 모드로 헤드셋/카드보드 체험'
-                : '💡 Drag to rotate 360° · Scroll to zoom · VR mode for headset/cardboard'}
+                ? '💡 상단 GNB에서 광화문과 석촌호수·롯데타워를 전환해 보세요 · 드래그 회전 · 휠 줌'
+                : '💡 Switch districts in the top GNB · Drag to rotate · Scroll to zoom'}
             </span>
             <button
               onClick={() => setShowQuickGuide(false)}
@@ -205,7 +231,7 @@ export default function App() {
       {/* Bottom Collapsible Navigation Dock */}
       {!vrState.isPresenting && (
         <NavigationDock
-          landmarks={LANDMARKS}
+          landmarks={zoneLandmarks}
           selectedLandmarkId={selectedLandmarkId}
           onSelectLandmark={handleSelectLandmark}
           timePreset={timePreset}
@@ -223,6 +249,7 @@ export default function App() {
       {/* In-VR Active HUD Overlay (Exit VR & Teleport Controls) */}
       <VrActiveOverlay
         vrMode={vrState.mode}
+        activeZone={activeZone}
         onExitVr={handleExitVr}
         onTeleport={handleTeleportInVr}
         lang={lang}
@@ -238,7 +265,7 @@ export default function App() {
         lang={lang}
       />
 
-      {/* Heritage Educational Docent Modal */}
+      {/* Heritage / Landmark Educational Docent Modal */}
       <HeritageModal
         landmark={currentLandmark}
         isOpen={isInfoOpen}

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { StereoEffect } from 'three/examples/jsm/effects/StereoEffect.js';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState } from '../types';
-import { getLightingPreset, dampVector3 } from '../utils/rules';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState, SceneZone } from '../types';
+import { getLightingPreset, dampVector3, getZoneOverviewCamera } from '../utils/rules';
 import { initPalaceMaterials, PalaceMaterials } from './materials';
 import { createSnowParticleTexture, createRainParticleTexture } from './textures';
 import { buildGwanghwamun } from './models/gwanghwamun';
@@ -12,6 +12,7 @@ import { buildGyeonghoeru } from './models/gyeonghoeru';
 import { buildGwanghwamunSquare } from './models/gwanghwamunSquare';
 import { buildSurroundings } from './models/surroundings';
 import { buildModernCityscape } from './models/modernCityscape';
+import { buildSeokchonLotte } from './models/seokchonLotte';
 
 export interface SceneManagerOptions {
   container: HTMLDivElement;
@@ -66,10 +67,15 @@ export class SceneManager {
   private targetLookAt: [number, number, number] | null = null;
   private isTransitioning = false;
 
+  // District Zones (광화문·경복궁 vs 석촌호수·롯데타워)
+  private currentZone: SceneZone = 'gwanghwamun';
+  private gwanghwamunGroup = new THREE.Group();
+  private jamsilGroup = new THREE.Group();
+
   // Landmarks & Raycasting
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
-  private clickableMarkers: { mesh: THREE.Mesh; landmarkId: string }[] = [];
+  private clickableMarkers: { mesh: THREE.Mesh; landmarkId: string; zone: SceneZone }[] = [];
   private onLandmarkSelect: (landmarkId: string) => void;
 
   // Auto-tour
@@ -136,7 +142,7 @@ export class SceneManager {
     this.controls.dampingFactor = 0.05;
     this.controls.maxPolarAngle = Math.PI * 0.49; // Keep above ground plane
     this.controls.minDistance = 3;
-    this.controls.maxDistance = 320;
+    this.controls.maxDistance = 380;
     this.controls.target.set(0, 5, 0);
 
     // WebXR Session lifecycle listeners
@@ -207,22 +213,25 @@ export class SceneManager {
   }
 
   private buildWorld() {
-    // 1. Broad Terraced Palace & Modern City Ground (대지 평면)
-    const groundGeo = new THREE.PlaneGeometry(380, 500);
+    // 1. Broad Terraced Ground (대지 평면)
+    const groundGeo = new THREE.PlaneGeometry(420, 520);
     const ground = new THREE.Mesh(groundGeo, this.materials.granite);
     ground.rotation.x = -Math.PI * 0.5;
     ground.position.set(0, 0, 10);
     ground.receiveShadow = true;
     this.scene.add(ground);
 
-    // 2. Sejong-daero & Gwanghwamun Square Boulevard paving (광장 보도)
+    // ========================================================
+    // Zone A: Gwanghwamun & Gyeongbokgung Realm (광화문·경복궁 구역)
+    // ========================================================
+    this.gwanghwamunGroup.name = 'zone_gwanghwamun';
+
+    // Sejong-daero & Gwanghwamun Square Boulevard paving (광장 보도)
     const squareGeo = new THREE.BoxGeometry(36, 0.08, 140);
     const squarePavement = new THREE.Mesh(squareGeo, this.materials.granite);
     squarePavement.position.set(0, 0.04, 85);
     squarePavement.receiveShadow = true;
-    this.scene.add(squarePavement);
 
-    // 3. Landmark Models (Historic Palace & Modern Cityscape)
     const gwanghwamun = buildGwanghwamun(this.materials);
     const geunjeongjeon = buildGeunjeongjeon(this.materials);
     const gyeonghoeru = buildGyeonghoeru(this.materials);
@@ -230,7 +239,8 @@ export class SceneManager {
     const surroundings = buildSurroundings(this.materials);
     const modernCityscape = buildModernCityscape(this.materials);
 
-    this.scene.add(
+    this.gwanghwamunGroup.add(
+      squarePavement,
       gwanghwamun,
       geunjeongjeon,
       gyeonghoeru,
@@ -239,7 +249,7 @@ export class SceneManager {
       modernCityscape
     );
 
-    // 4. Palace Night Lanterns
+    // Palace Night Lanterns
     const lanternSpots = [
       [0, 8.5, 3.2], // Gwanghwamun Munru
       [0, 5.0, -64], // Geunjeongjeon Court
@@ -248,35 +258,65 @@ export class SceneManager {
     lanternSpots.forEach(([lx, ly, lz]) => {
       const pl = new THREE.PointLight(0xffaa44, 0.0, 35, 1.8);
       pl.position.set(lx, ly, lz);
-      this.scene.add(pl);
+      this.gwanghwamunGroup.add(pl);
       this.lanternLights.push(pl);
     });
 
-    // 5. Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 및 현대 랜드마크 마커)
+    this.scene.add(this.gwanghwamunGroup);
+
+    // ========================================================
+    // Zone B: Seokchon Lake & Lotte World Tower Realm (석촌호수·롯데타워 구역)
+    // ========================================================
+    this.jamsilGroup.name = 'zone_jamsil';
+    const seokchonLotte = buildSeokchonLotte(this.materials);
+    this.jamsilGroup.add(seokchonLotte);
+
+    // Jamsil night accent lanterns (Lotte Tower plaza & Magic Island)
+    const jamsilLanternSpots = [
+      [52, 16, -20], // Lotte Tower Entrance Plaza
+      [-68, 12, 56], // Magic Castle
+    ];
+    jamsilLanternSpots.forEach(([lx, ly, lz]) => {
+      const pl = new THREE.PointLight(0xffcc66, 0.0, 55, 1.5);
+      pl.position.set(lx, ly, lz);
+      this.jamsilGroup.add(pl);
+      this.lanternLights.push(pl);
+    });
+
+    this.jamsilGroup.visible = this.currentZone === 'jamsil';
+    this.scene.add(this.jamsilGroup);
+
+    // Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 및 현대 랜드마크 마커)
     this.createDiscoveryMarkers();
   }
 
   private createDiscoveryMarkers() {
-    const markerData = [
-      { id: 'gwanghwamun', pos: [0, 15, 0] },
-      { id: 'woldae', pos: [0, 2.5, 24] },
-      { id: 'haechi', pos: [-9.2, 4.0, 28] },
-      { id: 'geunjeongjeon', pos: [0, 20, -68] },
-      { id: 'eojwa', pos: [0, 6.0, -70] },
-      { id: 'pumgyeseok', pos: [5.2, 1.8, -42] },
-      { id: 'gyeonghoeru', pos: [-68, 14, -68] },
-      { id: 'pillars_48', pos: [-68, 3.5, -60] },
-      { id: 'sejong', pos: [0, 8.5, 68] },
-      { id: 'yisunsin', pos: [0, 13.5, 120] },
-      { id: 'bugaksan', pos: [0, 48, -190] },
-      { id: 'cheoma_craft', pos: [6, 12.0, 4] },
-      { id: 'hongyemun_vault', pos: [0, 4.0, 0] },
-      // Modern Architecture Landmarks
-      { id: 'gwanghwamun_crossroad', pos: [0, 8.0, 150] },
-      { id: 'kyobo_building', pos: [70, 36, 160] },
-      { id: 'sejong_center', pos: [-72, 16, 115] },
-      { id: 'gov_complex', pos: [-74, 26, 60] },
-      { id: 'history_museum', pos: [68, 18, 45] },
+    const markerData: { id: string; zone: SceneZone; pos: [number, number, number] }[] = [
+      { id: 'gwanghwamun', zone: 'gwanghwamun', pos: [0, 15, 0] },
+      { id: 'woldae', zone: 'gwanghwamun', pos: [0, 2.5, 24] },
+      { id: 'haechi', zone: 'gwanghwamun', pos: [-9.2, 4.0, 28] },
+      { id: 'geunjeongjeon', zone: 'gwanghwamun', pos: [0, 20, -68] },
+      { id: 'eojwa', zone: 'gwanghwamun', pos: [0, 6.0, -70] },
+      { id: 'pumgyeseok', zone: 'gwanghwamun', pos: [5.2, 1.8, -42] },
+      { id: 'gyeonghoeru', zone: 'gwanghwamun', pos: [-68, 14, -68] },
+      { id: 'pillars_48', zone: 'gwanghwamun', pos: [-68, 3.5, -60] },
+      { id: 'sejong', zone: 'gwanghwamun', pos: [0, 8.5, 68] },
+      { id: 'yisunsin', zone: 'gwanghwamun', pos: [0, 13.5, 120] },
+      { id: 'bugaksan', zone: 'gwanghwamun', pos: [0, 48, -190] },
+      { id: 'cheoma_craft', zone: 'gwanghwamun', pos: [6, 12.0, 4] },
+      { id: 'hongyemun_vault', zone: 'gwanghwamun', pos: [0, 4.0, 0] },
+      // Modern Gwanghwamun Architecture Landmarks
+      { id: 'gwanghwamun_crossroad', zone: 'gwanghwamun', pos: [0, 8.0, 150] },
+      { id: 'kyobo_building', zone: 'gwanghwamun', pos: [70, 36, 160] },
+      { id: 'sejong_center', zone: 'gwanghwamun', pos: [-72, 16, 115] },
+      { id: 'gov_complex', zone: 'gwanghwamun', pos: [-74, 26, 60] },
+      { id: 'history_museum', zone: 'gwanghwamun', pos: [68, 18, 45] },
+      // Seokchon Lake & Lotte World Complex Landmarks
+      { id: 'lotte_world_tower', zone: 'jamsil', pos: [52, 118, -36] },
+      { id: 'seokchon_lake', zone: 'jamsil', pos: [68, 6.5, 65] },
+      { id: 'lotte_world_magic_island', zone: 'jamsil', pos: [-68, 22, 56] },
+      { id: 'lotte_world_mall', zone: 'jamsil', pos: [82, 22, -28] },
+      { id: 'jamsil_crossroad', zone: 'jamsil', pos: [0, 6.0, 0] },
     ];
 
     const beaconGeo = new THREE.SphereGeometry(0.7, 12, 10);
@@ -302,16 +342,19 @@ export class SceneManager {
       ring.rotation.x = -Math.PI * 0.5;
 
       markerGroup.add(beacon, ring);
-      this.scene.add(markerGroup);
+
+      // Attach marker visuals inside its corresponding zone group so switching zones hides inactive markers
+      const targetParent = item.zone === 'jamsil' ? this.jamsilGroup : this.gwanghwamunGroup;
+      targetParent.add(markerGroup);
 
       // Invisible hit proxy sphere for easy clicking
-      const hitGeo = new THREE.SphereGeometry(2.5, 8, 8);
+      const hitGeo = new THREE.SphereGeometry(3.2, 8, 8);
       const hitMat = new THREE.MeshBasicMaterial({ visible: false });
       const hitMesh = new THREE.Mesh(hitGeo, hitMat);
       hitMesh.position.set(item.pos[0], item.pos[1], item.pos[2]);
-      this.scene.add(hitMesh);
+      targetParent.add(hitMesh);
 
-      this.clickableMarkers.push({ mesh: hitMesh, landmarkId: item.id });
+      this.clickableMarkers.push({ mesh: hitMesh, landmarkId: item.id, zone: item.zone });
     });
   }
 
@@ -501,11 +544,12 @@ export class SceneManager {
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const meshes = this.clickableMarkers.map((m) => m.mesh);
+    const activeMarkers = this.clickableMarkers.filter((m) => m.zone === this.currentZone);
+    const meshes = activeMarkers.map((m) => m.mesh);
     const intersects = this.raycaster.intersectObjects(meshes);
 
     if (intersects.length > 0) {
-      const hit = this.clickableMarkers.find((m) => m.mesh === intersects[0].object);
+      const hit = activeMarkers.find((m) => m.mesh === intersects[0].object);
       if (hit) {
         this.onLandmarkSelect(hit.landmarkId);
       }
@@ -522,7 +566,38 @@ export class SceneManager {
     if (this.stereoEffect) {
       this.stereoEffect.setSize(width, height);
     }
+    if (!this.renderer.xr.isPresenting) {
+      this.renderer.render(this.scene, this.camera);
+    }
   };
+
+  public setZone(zone: SceneZone) {
+    if (this.currentZone === zone) return;
+    this.currentZone = zone;
+    this.gwanghwamunGroup.visible = zone === 'gwanghwamun';
+    this.jamsilGroup.visible = zone === 'jamsil';
+
+    if (!this.isSoftwareGl) {
+      const bound = zone === 'jamsil' ? 130 : 60;
+      this.sunLight.shadow.camera.left = -bound;
+      this.sunLight.shadow.camera.right = bound;
+      this.sunLight.shadow.camera.top = bound;
+      this.sunLight.shadow.camera.bottom = -bound;
+      this.sunLight.shadow.camera.far = zone === 'jamsil' ? 280 : 180;
+      this.sunLight.shadow.camera.updateProjectionMatrix();
+    }
+
+    const overview = getZoneOverviewCamera(zone);
+    this.isTransitioning = false;
+    this.targetCamPos = null;
+    this.targetLookAt = null;
+    this.camera.position.set(...overview.position);
+    this.controls.target.set(...overview.target);
+    this.controls.update();
+    if (!this.renderer.xr.isPresenting) {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
 
   public setTimePreset(preset: TimePreset) {
     this.currentTimePreset = preset;
@@ -535,6 +610,9 @@ export class SceneManager {
     this.materials.dancheong.wireframe = isWireframe;
     this.materials.granite.wireframe = isWireframe;
     this.materials.royalWood.wireframe = isWireframe;
+    this.materials.lotteTowerGlass.wireframe = isWireframe;
+    this.materials.lotteMallFacade.wireframe = isWireframe;
+    this.materials.magicCastleWall.wireframe = isWireframe;
 
     if (mode === 'night_lanterns') {
       this.setTimePreset('night');

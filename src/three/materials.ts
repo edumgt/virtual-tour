@@ -17,6 +17,9 @@ import {
   createKyoboFacadeTexture,
   createGovernmentFacadeTexture,
   createAsphaltRoadTexture,
+  createLotteTowerGlassTexture,
+  createLotteMallFacadeTexture,
+  createMagicCastleWallTexture,
 } from './textures';
 
 export interface PalaceMaterials {
@@ -51,6 +54,15 @@ export interface PalaceMaterials {
   asphaltRoad: THREE.MeshStandardMaterial;
   modernConcrete: THREE.MeshStandardMaterial;
   modernMullion: THREE.MeshStandardMaterial;
+  // Seokchon Lake & Lotte World Complex
+  lotteTowerGlass: THREE.MeshStandardMaterial;
+  lotteTowerFin: THREE.MeshStandardMaterial;
+  lotteMallFacade: THREE.MeshStandardMaterial;
+  magicCastleWall: THREE.MeshStandardMaterial;
+  castleTurretBlue: THREE.MeshStandardMaterial;
+  seokchonWater: THREE.MeshStandardMaterial;
+  cherryBlossomPink: THREE.MeshStandardMaterial;
+  woodDeck: THREE.MeshStandardMaterial;
   wireframeMode: boolean;
   dispose: () => void;
 }
@@ -97,6 +109,14 @@ export function initPalaceMaterials(): PalaceMaterials {
   governmentTex.repeat.set(2, 4);
   const asphaltTex = createAsphaltRoadTexture();
   asphaltTex.repeat.set(1, 6);
+
+  // Seokchon Lake & Lotte World Textures
+  const lotteTowerTex = createLotteTowerGlassTexture();
+  lotteTowerTex.repeat.set(3, 8);
+  const lotteMallTex = createLotteMallFacadeTexture();
+  lotteMallTex.repeat.set(4, 2);
+  const magicCastleTex = createMagicCastleWallTexture();
+  magicCastleTex.repeat.set(2, 2);
 
   const giwaRoof = new THREE.MeshStandardMaterial({
     map: giwaTex,
@@ -308,6 +328,62 @@ export function initPalaceMaterials(): PalaceMaterials {
     metalness: 0.75,
   });
 
+  // Seokchon Lake & Lotte World Materials
+  const lotteTowerGlass = new THREE.MeshStandardMaterial({
+    map: lotteTowerTex,
+    color: 0xffffff,
+    roughness: 0.14,
+    metalness: 0.82,
+    envMapIntensity: 1.5,
+  });
+
+  const lotteTowerFin = new THREE.MeshStandardMaterial({
+    color: 0xe3eaf2,
+    roughness: 0.25,
+    metalness: 0.85,
+  });
+
+  const lotteMallFacade = new THREE.MeshStandardMaterial({
+    map: lotteMallTex,
+    color: 0xffffff,
+    roughness: 0.48,
+    metalness: 0.18,
+  });
+
+  const magicCastleWall = new THREE.MeshStandardMaterial({
+    map: magicCastleTex,
+    color: 0xffffff,
+    roughness: 0.76,
+    metalness: 0.04,
+  });
+
+  const castleTurretBlue = new THREE.MeshStandardMaterial({
+    color: 0x265c96,
+    roughness: 0.34,
+    metalness: 0.28,
+  });
+
+  const seokchonWater = new THREE.MeshStandardMaterial({
+    color: 0x1a596e,
+    roughness: 0.08,
+    metalness: 0.25,
+    envMapIntensity: 1.35,
+    transparent: true,
+    opacity: 0.9,
+  });
+
+  const cherryBlossomPink = new THREE.MeshStandardMaterial({
+    color: 0xf7b2c9,
+    roughness: 0.85,
+    metalness: 0.0,
+  });
+
+  const woodDeck = new THREE.MeshStandardMaterial({
+    color: 0x875838,
+    roughness: 0.78,
+    metalness: 0.02,
+  });
+
   const allMaterials = [
     giwaRoof,
     dancheong,
@@ -339,6 +415,14 @@ export function initPalaceMaterials(): PalaceMaterials {
     asphaltRoad,
     modernConcrete,
     modernMullion,
+    lotteTowerGlass,
+    lotteTowerFin,
+    lotteMallFacade,
+    magicCastleWall,
+    castleTurretBlue,
+    seokchonWater,
+    cherryBlossomPink,
+    woodDeck,
   ];
 
   return {
@@ -372,6 +456,14 @@ export function initPalaceMaterials(): PalaceMaterials {
     asphaltRoad,
     modernConcrete,
     modernMullion,
+    lotteTowerGlass,
+    lotteTowerFin,
+    lotteMallFacade,
+    magicCastleWall,
+    castleTurretBlue,
+    seokchonWater,
+    cherryBlossomPink,
+    woodDeck,
     wireframeMode: false,
     dispose: () => {
       allMaterials.forEach((m) => m.dispose());
@@ -392,6 +484,9 @@ export function initPalaceMaterials(): PalaceMaterials {
       kyoboTex.dispose();
       governmentTex.dispose();
       asphaltTex.dispose();
+      lotteTowerTex.dispose();
+      lotteMallTex.dispose();
+      magicCastleTex.dispose();
     },
   };
 }

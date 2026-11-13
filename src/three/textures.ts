@@ -972,3 +972,171 @@ export function createAsphaltRoadTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * Creates Lotte World Tower sleek silver-ice-blue glass diagrid curtain-wall texture
+ */
+export function createLotteTowerGlassTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Cool silver-blue glass base
+  const grad = ctx.createLinearGradient(0, 0, 512, 512);
+  grad.addColorStop(0, '#5a82a6');
+  grad.addColorStop(0.5, '#8ab4d8');
+  grad.addColorStop(1, '#3d6185');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Horizontal story bands (16 floors per tile)
+  const rows = 16;
+  const cols = 8;
+  const rowH = 512 / rows;
+  const colW = 512 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * colW;
+      const y = r * rowH;
+
+      // Subtle reflective glass pane variation
+      const lit = (r * 7 + c * 11) % 9 === 0;
+      ctx.fillStyle = lit
+        ? 'rgba(215, 240, 255, 0.45)'
+        : 'rgba(18, 40, 68, 0.35)';
+      ctx.fillRect(x + 2, y + 2, colW - 4, rowH - 5);
+    }
+
+    // Crisp silver-white spandrel rib
+    ctx.fillStyle = r % 4 === 0 ? '#dbe8f5' : '#9bb6cf';
+    ctx.fillRect(0, r * rowH, 512, r % 4 === 0 ? 4 : 2);
+  }
+
+  // Diagonal aluminum diagrid highlights
+  ctx.strokeStyle = 'rgba(230, 242, 255, 0.38)';
+  ctx.lineWidth = 2;
+  for (let x = -512; x <= 1024; x += 128) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + 256, 512);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x, 512);
+    ctx.lineTo(x + 256, 0);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates Lotte World Mall & Avenuel warm ivory stone + horizontal glass ribbon facade texture
+ */
+export function createLotteMallFacadeTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#ebe6dc';
+  ctx.fillRect(0, 0, 512, 512);
+
+  const rows = 8;
+  const rowH = 512 / rows;
+
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    // Ribbon glass window strip
+    ctx.fillStyle = '#1f364d';
+    ctx.fillRect(0, y + 14, 512, rowH - 28);
+
+    // Warm interior retail glow
+    ctx.fillStyle = 'rgba(255, 224, 165, 0.25)';
+    ctx.fillRect(10, y + 18, 492, rowH - 36);
+
+    // Vertical aluminum mullions
+    ctx.fillStyle = '#cfd6de';
+    for (let x = 0; x < 512; x += 32) {
+      ctx.fillRect(x, y + 14, 2, rowH - 28);
+    }
+
+    // Ivory stone fascia band
+    ctx.fillStyle = '#d6cfc2';
+    ctx.fillRect(0, y, 512, 4);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates fairy-tale limestone block & arched castle window texture for Lotte World Magic Castle
+ */
+export function createMagicCastleWallTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Warm cream fairy-tale limestone
+  ctx.fillStyle = '#efe5d1';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Subtle ashlar stone joints
+  ctx.strokeStyle = 'rgba(140, 120, 95, 0.32)';
+  ctx.lineWidth = 2;
+  const rows = 16;
+  const rowH = 512 / rows;
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(512, y);
+    ctx.stroke();
+
+    const offset = (r % 2) * 32;
+    for (let x = offset; x < 512; x += 64) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + rowH);
+      ctx.stroke();
+    }
+  }
+
+  // Gothic arched castle windows
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 4; col++) {
+      const cx = 64 + col * 128;
+      const cy = 110 + row * 240;
+
+      ctx.fillStyle = '#1b2a47';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, Math.PI, 0);
+      ctx.lineTo(cx + 18, cy + 44);
+      ctx.lineTo(cx - 18, cy + 44);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#c8b48e';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+

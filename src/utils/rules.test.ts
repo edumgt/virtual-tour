@@ -5,6 +5,8 @@ import {
   dampVector3,
   distance3D,
   clampCameraPosition,
+  getZoneOverviewCamera,
+  filterLandmarksByZone,
   calculateEavesHeight,
   calculateRafterCount,
 } from './rules';
@@ -43,9 +45,36 @@ test('clampCameraPosition constrains values within allowable bounds', () => {
   assert.deepEqual(clampedInside, [10, 15, 20]);
 
   const clampedExtreme = clampCameraPosition([-500, 0.5, 999]);
-  assert.equal(clampedExtreme[0], -135);
+  assert.equal(clampedExtreme[0], -165);
   assert.equal(clampedExtreme[1], 1.2);
-  assert.equal(clampedExtreme[2], 230);
+  assert.equal(clampedExtreme[2], 240);
+
+  const clampedTop = clampCameraPosition([0, 400, 0]);
+  assert.equal(clampedTop[1], 230);
+});
+
+test('getZoneOverviewCamera returns distinct framing for gwanghwamun and jamsil', () => {
+  const gwanghwamunCam = getZoneOverviewCamera('gwanghwamun');
+  assert.equal(gwanghwamunCam.defaultLandmarkId, 'gwanghwamun');
+  assert.ok(gwanghwamunCam.position[1] < 30);
+
+  const jamsilCam = getZoneOverviewCamera('jamsil');
+  assert.equal(jamsilCam.defaultLandmarkId, 'lotte_world_tower');
+  assert.ok(jamsilCam.position[1] > 30);
+});
+
+test('filterLandmarksByZone filters landmarks strictly by active zone', () => {
+  const sample = [
+    { id: 'a', zone: 'gwanghwamun' as const },
+    { id: 'b', zone: 'jamsil' as const },
+    { id: 'c', zone: 'jamsil' as const },
+  ];
+  assert.equal(filterLandmarksByZone(sample, 'gwanghwamun').length, 1);
+  assert.equal(filterLandmarksByZone(sample, 'jamsil').length, 2);
+  assert.deepEqual(
+    filterLandmarksByZone(sample, 'jamsil').map((x) => x.id),
+    ['b', 'c']
+  );
 });
 
 test('calculateEavesHeight computes authentic concave Korean slope with corner sweep', () => {

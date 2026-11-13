@@ -1,9 +1,10 @@
 import React from 'react';
-import { X, MapPin, Compass } from 'lucide-react';
-import { VrMode } from '../types';
+import { X, MapPin } from 'lucide-react';
+import { VrMode, SceneZone } from '../types';
 
 interface VrActiveOverlayProps {
   vrMode: VrMode;
+  activeZone: SceneZone;
   onExitVr: () => void;
   onTeleport: (position: [number, number, number], target: [number, number, number]) => void;
   lang: 'ko' | 'en';
@@ -11,6 +12,7 @@ interface VrActiveOverlayProps {
 
 export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
   vrMode,
+  activeZone,
   onExitVr,
   onTeleport,
   lang,
@@ -33,7 +35,7 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
       <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-auto">
         {/* Status Pill */}
         <div className="px-3 py-1 rounded-full bg-stone-900/90 border border-amber-600/60 shadow-lg text-amber-200 text-xs font-mono flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
           <span>
             {vrMode === 'webxr'
               ? lang === 'ko'
@@ -64,40 +66,74 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
           <span className="hidden sm:inline">{lang === 'ko' ? '순간이동' : 'Teleport'}:</span>
         </div>
 
-        <button
-          onClick={() => onTeleport([0, 0, 24], [0, 4.5, 0])}
-          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
-        >
-          {lang === 'ko' ? '광화문 월대' : 'Gwanghwamun Woldae'}
-        </button>
+        {activeZone === 'gwanghwamun' ? (
+          <>
+            <button
+              onClick={() => onTeleport([0, 0, 24], [0, 4.5, 0])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '광화문 월대' : 'Gwanghwamun Woldae'}
+            </button>
 
-        <button
-          onClick={() => onTeleport([0, 0, -48], [0, 6, -70])}
-          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
-        >
-          {lang === 'ko' ? '근정전 조정' : 'Geunjeongjeon Court'}
-        </button>
+            <button
+              onClick={() => onTeleport([0, 0, -48], [0, 6, -70])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '근정전 조정' : 'Geunjeongjeon Court'}
+            </button>
 
-        <button
-          onClick={() => onTeleport([-68, 0, -50], [-68, 5, -68])}
-          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
-        >
-          {lang === 'ko' ? '경회루 연못' : 'Gyeonghoeru Lake'}
-        </button>
+            <button
+              onClick={() => onTeleport([-68, 0, -50], [-68, 5, -68])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '경회루 연못' : 'Gyeonghoeru Lake'}
+            </button>
 
-        <button
-          onClick={() => onTeleport([0, 0, 145], [0, 8, 120])}
-          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
-        >
-          {lang === 'ko' ? '광화문 사거리' : 'Crossroad'}
-        </button>
+            <button
+              onClick={() => onTeleport([0, 0, 145], [0, 8, 120])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '광화문 사거리' : 'Crossroad'}
+            </button>
 
-        <button
-          onClick={() => onTeleport([52, 0, 155], [70, 22, 160])}
-          className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
-        >
-          {lang === 'ko' ? '교보생명 빌딩' : 'Kyobo Building'}
-        </button>
+            <button
+              onClick={() => onTeleport([52, 0, 155], [70, 22, 160])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '교보생명 빌딩' : 'Kyobo Building'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onTeleport([54, 1, 22], [52, 65, -36])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '석촌호수 수변데크' : 'Seokchon Lake Deck'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-68, 2, 32], [-68, 12, 56])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '매직아일랜드' : 'Magic Island'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([0, 0, 65], [52, 55, -36])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '잠실호수교' : 'Jamsil Lake Bridge'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([0, 0, 10], [52, 48, -36])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '잠실역 사거리' : 'Jamsil Crossroad'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

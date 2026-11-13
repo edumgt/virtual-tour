@@ -1,3 +1,5 @@
+export type SceneZone = 'gwanghwamun' | 'jamsil';
+
 export type TimePreset = 'day' | 'sunset' | 'night' | 'dawn';
 
 export type RenderingMode = 'pbr' | 'architectural' | 'night_lanterns';
@@ -15,10 +17,11 @@ export interface VrState {
 
 export interface LandmarkInfo {
   id: string;
+  zone: SceneZone;
   nameKo: string;
   nameEn: string;
   nameHanja: string;
-  category: '국보' | '사적' | '명소' | '조각/상징' | '자연' | '건축/기법';
+  category: '국보' | '사적' | '명소' | '조각/상징' | '자연' | '건축/기법' | '마천루' | '테마파크';
   summaryKo: string;
   summaryEn: string;
   detailsKo: string[];
@@ -32,6 +35,7 @@ export interface LandmarkInfo {
 
 export interface CameraPreset {
   id: string;
+  zone?: SceneZone;
   titleKo: string;
   titleEn: string;
   position: [number, number, number];

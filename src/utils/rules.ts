@@ -1,4 +1,4 @@
-import { TimePreset } from '../types';
+import { TimePreset, SceneZone } from '../types';
 
 export interface LightConfig {
   sunColor: number;
@@ -111,23 +111,55 @@ export function distance3D(
 }
 
 /**
- * Bounds checking to clamp camera within Joseon palace & Gwanghwamun modern viewing envelope
+ * Bounds checking to clamp camera within Seoul landmarks viewing envelope
  */
 export function clampCameraPosition(
   pos: [number, number, number]
 ): [number, number, number] {
-  const minX = -135;
-  const maxX = 135;
+  const minX = -165;
+  const maxX = 165;
   const minY = 1.2;
-  const maxY = 150;
-  const minZ = -200;
-  const maxZ = 230;
+  const maxY = 230;
+  const minZ = -210;
+  const maxZ = 240;
 
   return [
     Math.max(minX, Math.min(maxX, pos[0])),
     Math.max(minY, Math.min(maxY, pos[1])),
     Math.max(minZ, Math.min(maxZ, pos[2])),
   ];
+}
+
+/**
+ * Returns default camera overview and primary landmark ID for a given district zone
+ */
+export function getZoneOverviewCamera(zone: SceneZone): {
+  position: [number, number, number];
+  target: [number, number, number];
+  defaultLandmarkId: string;
+} {
+  if (zone === 'jamsil') {
+    return {
+      position: [-26, 78, 224],
+      target: [12, 64, -12],
+      defaultLandmarkId: 'lotte_world_tower',
+    };
+  }
+  return {
+    position: [0, 12, 48],
+    target: [0, 5, 0],
+    defaultLandmarkId: 'gwanghwamun',
+  };
+}
+
+/**
+ * Filters landmark metadata list to those belonging to the active district zone
+ */
+export function filterLandmarksByZone<T extends { zone: SceneZone }>(
+  landmarks: T[],
+  zone: SceneZone
+): T[] {
+  return landmarks.filter((item) => item.zone === zone);
 }
 
 /**

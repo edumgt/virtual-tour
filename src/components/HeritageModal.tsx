@@ -36,8 +36,8 @@ export const HeritageModal: React.FC<HeritageModalProps> = ({
         {/* Header Ribbon */}
         <div className="flex items-start justify-between border-b border-stone-800 pb-4 mb-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950 text-amber-300 border border-amber-700/70">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950 text-amber-300 border border-amber-700/70 whitespace-nowrap shrink-0">
                 {landmark.category}
               </span>
               <span className="text-xs text-stone-400 font-mono">
