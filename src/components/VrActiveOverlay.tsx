@@ -103,7 +103,7 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
               {lang === 'ko' ? '교보생명 빌딩' : 'Kyobo Building'}
             </button>
           </>
-        ) : (
+        ) : activeZone === 'jamsil' ? (
           <>
             <button
               onClick={() => onTeleport([54, 1, 22], [52, 65, -36])}
@@ -131,6 +131,36 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
               className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
             >
               {lang === 'ko' ? '잠실역 사거리' : 'Jamsil Crossroad'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onTeleport([-3.4, 7.2, 108], [0, 32, -98])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '한강대교 남단' : 'Bridge South Deck'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-3.4, 7.2, 62], [0, 34, -98])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '한강대교 중앙' : 'Mid-Bridge Crossing'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-20, 4, -22], [3, 72, -102])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '한남동 언덕길' : 'Hannam Hillside'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-12, 46, -90], [3, 78, -102])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '남산 정상 광장' : 'Namsan Summit'}
             </button>
           </>
         )}

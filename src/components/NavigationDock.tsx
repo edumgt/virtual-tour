@@ -15,11 +15,13 @@ import {
   Snowflake,
   CloudRain,
   Glasses,
+  Navigation,
 } from 'lucide-react';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect } from '../types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, SceneZone } from '../types';
 import { soundController } from '../audio/traditionalAudio';
 
 interface NavigationDockProps {
+  activeZone?: SceneZone;
   landmarks: LandmarkInfo[];
   selectedLandmarkId: string;
   onSelectLandmark: (id: string) => void;
@@ -29,12 +31,15 @@ interface NavigationDockProps {
   onSetRenderingMode: (mode: RenderingMode) => void;
   weather: WeatherEffect;
   onSetWeather: (weather: WeatherEffect) => void;
+  isBridgeDriving?: boolean;
+  onToggleBridgeDrive?: () => void;
   onOpenVr?: () => void;
   isVrActive?: boolean;
   lang: 'ko' | 'en';
 }
 
 export const NavigationDock: React.FC<NavigationDockProps> = ({
+  activeZone = 'gwanghwamun',
   landmarks,
   selectedLandmarkId,
   onSelectLandmark,
@@ -44,6 +49,8 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
   onSetRenderingMode,
   weather,
   onSetWeather,
+  isBridgeDriving = false,
+  onToggleBridgeDrive,
   onOpenVr,
   isVrActive = false,
   lang,
@@ -229,6 +236,26 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                   );
                 })}
               </div>
+
+              {/* Bridge Crossing Scenic Drive button (only in Namsan & Han River zone) */}
+              {activeZone === 'namsan_han' && onToggleBridgeDrive && (
+                <button
+                  type="button"
+                  data-testid="bridge-drive-button"
+                  onClick={onToggleBridgeDrive}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors shrink-0 ${
+                    isBridgeDriving
+                      ? 'bg-emerald-600 text-white font-medium border-emerald-400 shadow'
+                      : 'bg-stone-800 hover:bg-emerald-900/60 text-emerald-300 border-stone-700/60'
+                  }`}
+                  title={lang === 'ko' ? '한강대교 위를 따라 북쪽으로 주행하며 풍경 감상' : 'Drive north across Han River Bridge'}
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">
+                    {lang === 'ko' ? (isBridgeDriving ? '주행 중지' : '대교 건너기 주행') : isBridgeDriving ? 'Stop Drive' : 'Bridge Drive'}
+                  </span>
+                </button>
+              )}
 
               {/* Quick Interactive Bell */}
               <button

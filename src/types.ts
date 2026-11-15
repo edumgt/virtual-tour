@@ -1,4 +1,4 @@
-export type SceneZone = 'gwanghwamun' | 'jamsil';
+export type SceneZone = 'gwanghwamun' | 'jamsil' | 'namsan_han';
 
 export type TimePreset = 'day' | 'sunset' | 'night' | 'dawn';
 
@@ -21,7 +21,7 @@ export interface LandmarkInfo {
   nameKo: string;
   nameEn: string;
   nameHanja: string;
-  category: '국보' | '사적' | '명소' | '조각/상징' | '자연' | '건축/기법' | '마천루' | '테마파크';
+  category: '국보' | '사적' | '명소' | '조각/상징' | '자연' | '건축/기법' | '마천루' | '테마파크' | '한강/교량';
   summaryKo: string;
   summaryEn: string;
   detailsKo: string[];

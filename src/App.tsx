@@ -26,6 +26,7 @@ export default function App() {
   const [isWebXrSupported, setIsWebXrSupported] = useState<boolean>(false);
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
   const [showQuickGuide, setShowQuickGuide] = useState<boolean>(true);
+  const [isBridgeDriving, setIsBridgeDriving] = useState<boolean>(false);
 
   // Check WebXR device capability on mount
   useEffect(() => {
@@ -56,6 +57,9 @@ export default function App() {
       onVrStateChange: (state: VrState) => {
         setVrState(state);
       },
+      onBridgeDriveStateChange: (driving: boolean) => {
+        setIsBridgeDriving(driving);
+      },
     });
 
     sceneManagerRef.current = manager;
@@ -84,7 +88,19 @@ export default function App() {
     if (sceneManagerRef.current) {
       sceneManagerRef.current.setZone(zone);
     }
-    soundController.playGayageumNote(zone === 'jamsil' ? 587 : 440);
+    soundController.playGayageumNote(zone === 'jamsil' ? 587 : zone === 'namsan_han' ? 659 : 440);
+  };
+
+  // Handle Han River Bridge Crossing Scenic Drive
+  const handleToggleBridgeDrive = () => {
+    if (!sceneManagerRef.current) return;
+    if (isBridgeDriving) {
+      sceneManagerRef.current.stopBridgeDrive();
+    } else {
+      setSelectedLandmarkId('hangang_bridge_crossing');
+      sceneManagerRef.current.startBridgeDrive();
+      soundController.playGayageumNote(523);
+    }
   };
 
   // Handle Landmark Navigation
@@ -214,7 +230,7 @@ export default function App() {
           <div className="bg-stone-900/95 text-amber-200 text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-amber-600/50 shadow-xl flex items-center justify-between gap-2">
             <span className="truncate">
               {lang === 'ko'
-                ? '💡 상단 GNB에서 광화문과 석촌호수·롯데타워를 전환해 보세요 · 드래그 회전 · 휠 줌'
+                ? '💡 상단 GNB에서 광화문·석촌호수·남산 한강대교를 전환해 보세요 · 드래그 회전 · 휠 줌'
                 : '💡 Switch districts in the top GNB · Drag to rotate · Scroll to zoom'}
             </span>
             <button
@@ -231,6 +247,7 @@ export default function App() {
       {/* Bottom Collapsible Navigation Dock */}
       {!vrState.isPresenting && (
         <NavigationDock
+          activeZone={activeZone}
           landmarks={zoneLandmarks}
           selectedLandmarkId={selectedLandmarkId}
           onSelectLandmark={handleSelectLandmark}
@@ -240,6 +257,8 @@ export default function App() {
           onSetRenderingMode={handleSetRenderingMode}
           weather={weather}
           onSetWeather={handleSetWeather}
+          isBridgeDriving={isBridgeDriving}
+          onToggleBridgeDrive={handleToggleBridgeDrive}
           onOpenVr={handleOpenVr}
           isVrActive={vrState.isPresenting}
           lang={lang}

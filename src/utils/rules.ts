@@ -145,10 +145,36 @@ export function getZoneOverviewCamera(zone: SceneZone): {
       defaultLandmarkId: 'lotte_world_tower',
     };
   }
+  if (zone === 'namsan_han') {
+    return {
+      position: [-30, 34, 186],
+      target: [0, 40, -70],
+      defaultLandmarkId: 'hangang_bridge_crossing',
+    };
+  }
   return {
     position: [0, 12, 48],
     target: [0, 5, 0],
     defaultLandmarkId: 'gwanghwamun',
+  };
+}
+
+/**
+ * Computes interpolated camera position & lookAt along the Han River Bridge north-bound crossing
+ */
+export function evaluateBridgeCrossingPose(progress: number): {
+  position: [number, number, number];
+  target: [number, number, number];
+} {
+  const t = Math.max(0, Math.min(1, progress));
+  const z = 138 - t * 106; // Crosses from South Approach Ramp (Z=138) across twin arches to North Span (Z=32)
+  const x = -3.4 + Math.sin(t * Math.PI) * 0.6; // Gentle lane perspective near bridge centerline
+  const y = 10.6 + Math.sin(t * Math.PI) * 1.0; // Elevated scenic eye height over bridge arch & traffic
+  const targetY = 50 + t * 26; // Frames both twin steel arches & full N Seoul Tower spire cleanly
+  const targetZ = -98;
+  return {
+    position: [x, y, z],
+    target: [1.0, targetY, targetZ],
   };
 }
 

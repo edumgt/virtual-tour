@@ -20,6 +20,8 @@ import {
   createLotteTowerGlassTexture,
   createLotteMallFacadeTexture,
   createMagicCastleWallTexture,
+  createNamsanTowerBodyTexture,
+  createHannamVillaTexture,
 } from './textures';
 
 export interface PalaceMaterials {
@@ -63,6 +65,13 @@ export interface PalaceMaterials {
   seokchonWater: THREE.MeshStandardMaterial;
   cherryBlossomPink: THREE.MeshStandardMaterial;
   woodDeck: THREE.MeshStandardMaterial;
+  // Namsan Tower, Hannam-dong & Han River Bridge
+  namsanTowerPod: THREE.MeshStandardMaterial;
+  namsanSpireRed: THREE.MeshStandardMaterial;
+  hannamVilla: THREE.MeshStandardMaterial;
+  leeumTerracotta: THREE.MeshStandardMaterial;
+  bridgeSteel: THREE.MeshStandardMaterial;
+  hanRiverWater: THREE.MeshStandardMaterial;
   wireframeMode: boolean;
   dispose: () => void;
 }
@@ -117,6 +126,12 @@ export function initPalaceMaterials(): PalaceMaterials {
   lotteMallTex.repeat.set(4, 2);
   const magicCastleTex = createMagicCastleWallTexture();
   magicCastleTex.repeat.set(2, 2);
+
+  // Namsan, Hannam-dong & Han River Textures
+  const namsanPodTex = createNamsanTowerBodyTexture();
+  namsanPodTex.repeat.set(2, 1);
+  const hannamVillaTex = createHannamVillaTexture();
+  hannamVillaTex.repeat.set(2, 1);
 
   const giwaRoof = new THREE.MeshStandardMaterial({
     map: giwaTex,
@@ -384,6 +399,50 @@ export function initPalaceMaterials(): PalaceMaterials {
     metalness: 0.02,
   });
 
+  // Namsan Tower, Hannam-dong & Han River Bridge Materials
+  const namsanTowerPod = new THREE.MeshStandardMaterial({
+    map: namsanPodTex,
+    color: 0xffffff,
+    roughness: 0.28,
+    metalness: 0.62,
+    envMapIntensity: 1.35,
+  });
+
+  const namsanSpireRed = new THREE.MeshStandardMaterial({
+    color: 0xd92b2b,
+    roughness: 0.36,
+    metalness: 0.42,
+  });
+
+  const hannamVilla = new THREE.MeshStandardMaterial({
+    map: hannamVillaTex,
+    color: 0xffffff,
+    roughness: 0.56,
+    metalness: 0.06,
+  });
+
+  const leeumTerracotta = new THREE.MeshStandardMaterial({
+    color: 0x8f432c,
+    roughness: 0.68,
+    metalness: 0.12,
+  });
+
+  const bridgeSteel = new THREE.MeshStandardMaterial({
+    color: 0xd3dce6,
+    roughness: 0.3,
+    metalness: 0.76,
+    envMapIntensity: 1.2,
+  });
+
+  const hanRiverWater = new THREE.MeshStandardMaterial({
+    color: 0x15526b,
+    roughness: 0.08,
+    metalness: 0.32,
+    envMapIntensity: 1.45,
+    transparent: true,
+    opacity: 0.92,
+  });
+
   const allMaterials = [
     giwaRoof,
     dancheong,
@@ -423,6 +482,12 @@ export function initPalaceMaterials(): PalaceMaterials {
     seokchonWater,
     cherryBlossomPink,
     woodDeck,
+    namsanTowerPod,
+    namsanSpireRed,
+    hannamVilla,
+    leeumTerracotta,
+    bridgeSteel,
+    hanRiverWater,
   ];
 
   return {
@@ -464,6 +529,12 @@ export function initPalaceMaterials(): PalaceMaterials {
     seokchonWater,
     cherryBlossomPink,
     woodDeck,
+    namsanTowerPod,
+    namsanSpireRed,
+    hannamVilla,
+    leeumTerracotta,
+    bridgeSteel,
+    hanRiverWater,
     wireframeMode: false,
     dispose: () => {
       allMaterials.forEach((m) => m.dispose());
@@ -487,6 +558,8 @@ export function initPalaceMaterials(): PalaceMaterials {
       lotteTowerTex.dispose();
       lotteMallTex.dispose();
       magicCastleTex.dispose();
+      namsanPodTex.dispose();
+      hannamVillaTex.dispose();
     },
   };
 }

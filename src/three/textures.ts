@@ -1139,4 +1139,101 @@ export function createMagicCastleWallTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * Creates N Seoul Tower observation pod glass, steel cladding, and warm revolving restaurant window bands
+ */
+export function createNamsanTowerBodyTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Clean silver-white architectural aluminum panel base
+  ctx.fillStyle = '#e5e9ef';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Horizontal observatory window bands
+  const bands = [110, 220, 330];
+  bands.forEach((y, idx) => {
+    ctx.fillStyle = '#18283c';
+    ctx.fillRect(0, y, 512, 68);
+
+    // Warm interior dining & observatory glow
+    ctx.fillStyle = idx === 1 ? 'rgba(255, 210, 125, 0.48)' : 'rgba(130, 200, 255, 0.35)';
+    ctx.fillRect(0, y + 10, 512, 48);
+
+    // Vertical dark steel mullions
+    ctx.fillStyle = '#2d3748';
+    for (let x = 0; x < 512; x += 24) {
+      ctx.fillRect(x, y, 4, 68);
+    }
+  });
+
+  // Metallic panel seam rings
+  ctx.fillStyle = '#94a3b8';
+  for (let y = 0; y < 512; y += 64) {
+    ctx.fillRect(0, y, 512, 3);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates Hannam-dong luxury hillside villa & terraced apartment facade texture
+ */
+export function createHannamVillaTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Warm travertine & cream limestone exterior
+  ctx.fillStyle = '#ded5c5';
+  ctx.fillRect(0, 0, 512, 512);
+
+  const rows = 5;
+  const cols = 4;
+  const rowH = 512 / rows;
+  const colW = 512 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * colW;
+      const y = r * rowH;
+
+      // Recessed bronze-framed panoramic terrace window
+      ctx.fillStyle = '#24303e';
+      ctx.fillRect(x + 12, y + 14, colW - 24, rowH - 34);
+
+      // Warm residential interior light
+      if ((r * 5 + c * 3) % 4 !== 0) {
+        ctx.fillStyle = 'rgba(255, 226, 175, 0.36)';
+        ctx.fillRect(x + 16, y + 18, colW - 32, rowH - 42);
+      }
+
+      // Glass balcony balustrade
+      ctx.fillStyle = 'rgba(175, 210, 230, 0.45)';
+      ctx.fillRect(x + 10, y + rowH - 26, colW - 20, 14);
+      ctx.strokeStyle = '#3e3a35';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 10, y + rowH - 26, colW - 20, 14);
+    }
+
+    // Travertine stone floor band
+    ctx.fillStyle = '#c5baa7';
+    ctx.fillRect(0, r * rowH, 512, 6);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, Compass, BookOpen, Languages, Glasses, Landmark, Building2 } from 'lucide-react';
+import { Volume2, Compass, BookOpen, Languages, Glasses, Landmark, Building2, Mountain } from 'lucide-react';
 import { soundController } from '../audio/traditionalAudio';
 import { SceneZone } from '../types';
 
@@ -38,13 +38,14 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   };
 
   const isJamsil = activeZone === 'jamsil';
+  const isNamsan = activeZone === 'namsan_han';
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none p-2.5 sm:p-4 flex flex-wrap items-center justify-between gap-2">
       {/* Title & District Seal */}
       <div className="pointer-events-auto bg-stone-900/95 text-stone-100 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-stone-700/80 shadow-xl flex items-center gap-2 sm:gap-3">
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-600/30 border border-amber-500/50 flex items-center justify-center font-serif text-amber-300 font-bold text-xs sm:text-sm shrink-0">
-          {isJamsil ? '湖' : '景'}
+          {isJamsil ? '湖' : isNamsan ? '南' : '景'}
         </div>
         <div>
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -53,6 +54,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 ? lang === 'ko'
                   ? '석촌호수 & 롯데타워'
                   : 'Seokchon Lake & Lotte Tower'
+                : isNamsan
+                ? lang === 'ko'
+                  ? '남산 & 한남 · 한강대교'
+                  : 'Namsan & Han River'
                 : lang === 'ko'
                 ? '경복궁 & 광화문'
                 : 'Gyeongbokgung'}
@@ -66,6 +71,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
               ? lang === 'ko'
                 ? '잠실 롯데월드·마천루·수변 공원 3D 탐방'
                 : 'Jamsil Landmark & Lakeside 3D'
+              : isNamsan
+              ? lang === 'ko'
+                ? '남산서울타워·한남동·한강 교량 횡단 3D'
+                : 'N Seoul Tower, Hannam & Bridge Crossing'
               : lang === 'ko'
               ? '디지털 문화유산 3D 탐방'
               : 'Joseon Dynasty 3D Heritage'}
@@ -73,17 +82,17 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         </div>
       </div>
 
-      {/* GNB District Switcher (광화문·경복궁 vs 석촌호수·롯데타워) */}
+      {/* GNB District Switcher (광화문·경복궁 / 석촌호수·롯데타워 / 남산·한남·한강대교) */}
       <nav
         aria-label={lang === 'ko' ? '서울 3D 구역 선택' : 'Seoul 3D District Navigation'}
-        className="pointer-events-auto order-3 lg:order-2 w-full lg:w-auto flex items-center justify-center bg-stone-900/95 p-1 rounded-xl border border-stone-700/80 shadow-xl gap-1"
+        className="pointer-events-auto order-3 lg:order-2 w-full lg:w-auto flex items-center justify-center bg-stone-900/95 p-1 rounded-xl border border-stone-700/80 shadow-xl gap-1 overflow-x-auto"
       >
         <button
           type="button"
           data-zone="gwanghwamun"
           aria-pressed={activeZone === 'gwanghwamun'}
           onClick={() => onSelectZone('gwanghwamun')}
-          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
             activeZone === 'gwanghwamun'
               ? 'bg-amber-600 text-white shadow'
               : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
@@ -98,7 +107,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           data-zone="jamsil"
           aria-pressed={activeZone === 'jamsil'}
           onClick={() => onSelectZone('jamsil')}
-          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
             activeZone === 'jamsil'
               ? 'bg-amber-600 text-white shadow'
               : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
@@ -106,6 +115,21 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         >
           <Building2 className="w-3.5 h-3.5 shrink-0" />
           <span>{lang === 'ko' ? '석촌호수 · 롯데타워' : 'Seokchon · Lotte'}</span>
+        </button>
+
+        <button
+          type="button"
+          data-zone="namsan_han"
+          aria-pressed={activeZone === 'namsan_han'}
+          onClick={() => onSelectZone('namsan_han')}
+          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+            activeZone === 'namsan_han'
+              ? 'bg-amber-600 text-white shadow'
+              : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
+          }`}
+        >
+          <Mountain className="w-3.5 h-3.5 shrink-0" />
+          <span>{lang === 'ko' ? '남산 · 한남 · 한강대교' : 'Namsan · Han River'}</span>
         </button>
       </nav>
 

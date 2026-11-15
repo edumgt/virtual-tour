@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { StereoEffect } from 'three/examples/jsm/effects/StereoEffect.js';
 import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState, SceneZone } from '../types';
-import { getLightingPreset, dampVector3, getZoneOverviewCamera } from '../utils/rules';
+import { getLightingPreset, dampVector3, getZoneOverviewCamera, evaluateBridgeCrossingPose } from '../utils/rules';
 import { initPalaceMaterials, PalaceMaterials } from './materials';
 import { createSnowParticleTexture, createRainParticleTexture } from './textures';
 import { buildGwanghwamun } from './models/gwanghwamun';
@@ -13,11 +13,13 @@ import { buildGwanghwamunSquare } from './models/gwanghwamunSquare';
 import { buildSurroundings } from './models/surroundings';
 import { buildModernCityscape } from './models/modernCityscape';
 import { buildSeokchonLotte } from './models/seokchonLotte';
+import { buildNamsanHannamBridge } from './models/namsanHannamBridge';
 
 export interface SceneManagerOptions {
   container: HTMLDivElement;
   onLandmarkSelect: (landmarkId: string) => void;
   onVrStateChange?: (state: VrState) => void;
+  onBridgeDriveStateChange?: (isDriving: boolean) => void;
 }
 
 export class SceneManager {
@@ -67,10 +69,16 @@ export class SceneManager {
   private targetLookAt: [number, number, number] | null = null;
   private isTransitioning = false;
 
-  // District Zones (광화문·경복궁 vs 석촌호수·롯데타워)
+  // District Zones (광화문·경복궁 vs 석촌호수·롯데타워 vs 남산·한남·한강대교)
   private currentZone: SceneZone = 'gwanghwamun';
   private gwanghwamunGroup = new THREE.Group();
   private jamsilGroup = new THREE.Group();
+  private namsanHanGroup = new THREE.Group();
+
+  // Bridge Crossing Animated Drive State
+  private isBridgeDriving = false;
+  private bridgeDriveProgress = 0;
+  private onBridgeDriveStateChange?: (isDriving: boolean) => void;
 
   // Landmarks & Raycasting
   private raycaster = new THREE.Raycaster();
@@ -85,6 +93,7 @@ export class SceneManager {
     this.container = options.container;
     this.onLandmarkSelect = options.onLandmarkSelect;
     this.onVrStateChange = options.onVrStateChange;
+    this.onBridgeDriveStateChange = options.onBridgeDriveStateChange;
 
     // Detect software WebGL
     this.isSoftwareGl = (() => {
@@ -165,11 +174,14 @@ export class SceneManager {
       }
     });
 
-    // Cancel camera transitions on manual user drag
+    // Cancel camera transitions and bridge drive on manual user drag
     this.controls.addEventListener('start', () => {
       this.isTransitioning = false;
       this.targetCamPos = null;
       this.targetLookAt = null;
+      if (this.isBridgeDriving) {
+        this.stopBridgeDrive();
+      }
     });
 
     // Initialize Materials & Lighting
@@ -286,6 +298,29 @@ export class SceneManager {
     this.jamsilGroup.visible = this.currentZone === 'jamsil';
     this.scene.add(this.jamsilGroup);
 
+    // ========================================================
+    // Zone C: N Seoul Tower, Hannam-dong & Han River Bridge (남산·한남·한강대교 구역)
+    // ========================================================
+    this.namsanHanGroup.name = 'zone_namsan_han';
+    const namsanHannamBridge = buildNamsanHannamBridge(this.materials);
+    this.namsanHanGroup.add(namsanHannamBridge);
+
+    // Night accent beacons (N Seoul Tower Pod, Some Sevit & Han River Bridge)
+    const namsanLanternSpots = [
+      [3, 100, -102], // N Seoul Tower Observatory
+      [66, 7, 72], // Some Sevit Floating Pavilions
+      [0, 12, 62], // Han River Bridge Arch Center
+    ];
+    namsanLanternSpots.forEach(([lx, ly, lz]) => {
+      const pl = new THREE.PointLight(0xffbb55, 0.0, 65, 1.5);
+      pl.position.set(lx, ly, lz);
+      this.namsanHanGroup.add(pl);
+      this.lanternLights.push(pl);
+    });
+
+    this.namsanHanGroup.visible = this.currentZone === 'namsan_han';
+    this.scene.add(this.namsanHanGroup);
+
     // Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 및 현대 랜드마크 마커)
     this.createDiscoveryMarkers();
   }
@@ -317,6 +352,12 @@ export class SceneManager {
       { id: 'lotte_world_magic_island', zone: 'jamsil', pos: [-68, 22, 56] },
       { id: 'lotte_world_mall', zone: 'jamsil', pos: [82, 22, -28] },
       { id: 'jamsil_crossroad', zone: 'jamsil', pos: [0, 6.0, 0] },
+      // Namsan Tower, Hannam-dong & Han River Bridge Landmarks
+      { id: 'hangang_bridge_crossing', zone: 'namsan_han', pos: [0, 18, 62] },
+      { id: 'n_seoul_tower', zone: 'namsan_han', pos: [3, 98, -102] },
+      { id: 'hannam_dong', zone: 'namsan_han', pos: [-34, 18, -37] },
+      { id: 'namsan_mountain', zone: 'namsan_han', pos: [-10.5, 53, -96] },
+      { id: 'hangang_river_park', zone: 'namsan_han', pos: [66, 8.5, 72] },
     ];
 
     const beaconGeo = new THREE.SphereGeometry(0.7, 12, 10);
@@ -344,7 +385,12 @@ export class SceneManager {
       markerGroup.add(beacon, ring);
 
       // Attach marker visuals inside its corresponding zone group so switching zones hides inactive markers
-      const targetParent = item.zone === 'jamsil' ? this.jamsilGroup : this.gwanghwamunGroup;
+      const targetParent =
+        item.zone === 'jamsil'
+          ? this.jamsilGroup
+          : item.zone === 'namsan_han'
+          ? this.namsanHanGroup
+          : this.gwanghwamunGroup;
       targetParent.add(markerGroup);
 
       // Invisible hit proxy sphere for easy clicking
@@ -573,17 +619,19 @@ export class SceneManager {
 
   public setZone(zone: SceneZone) {
     if (this.currentZone === zone) return;
+    this.stopBridgeDrive();
     this.currentZone = zone;
     this.gwanghwamunGroup.visible = zone === 'gwanghwamun';
     this.jamsilGroup.visible = zone === 'jamsil';
+    this.namsanHanGroup.visible = zone === 'namsan_han';
 
     if (!this.isSoftwareGl) {
-      const bound = zone === 'jamsil' ? 130 : 60;
+      const bound = zone === 'namsan_han' ? 140 : zone === 'jamsil' ? 130 : 60;
       this.sunLight.shadow.camera.left = -bound;
       this.sunLight.shadow.camera.right = bound;
       this.sunLight.shadow.camera.top = bound;
       this.sunLight.shadow.camera.bottom = -bound;
-      this.sunLight.shadow.camera.far = zone === 'jamsil' ? 280 : 180;
+      this.sunLight.shadow.camera.far = zone === 'gwanghwamun' ? 180 : 300;
       this.sunLight.shadow.camera.updateProjectionMatrix();
     }
 
@@ -597,6 +645,28 @@ export class SceneManager {
     if (!this.renderer.xr.isPresenting) {
       this.renderer.render(this.scene, this.camera);
     }
+  }
+
+  public startBridgeDrive() {
+    if (this.currentZone !== 'namsan_han') {
+      this.setZone('namsan_han');
+    }
+    this.isTransitioning = false;
+    this.targetCamPos = null;
+    this.targetLookAt = null;
+    this.isBridgeDriving = true;
+    this.bridgeDriveProgress = 0;
+    const pose = evaluateBridgeCrossingPose(0);
+    this.camera.position.set(...pose.position);
+    this.controls.target.set(...pose.target);
+    this.controls.update();
+    this.onBridgeDriveStateChange?.(true);
+  }
+
+  public stopBridgeDrive() {
+    if (!this.isBridgeDriving) return;
+    this.isBridgeDriving = false;
+    this.onBridgeDriveStateChange?.(false);
   }
 
   public setTimePreset(preset: TimePreset) {
@@ -613,6 +683,10 @@ export class SceneManager {
     this.materials.lotteTowerGlass.wireframe = isWireframe;
     this.materials.lotteMallFacade.wireframe = isWireframe;
     this.materials.magicCastleWall.wireframe = isWireframe;
+    this.materials.namsanTowerPod.wireframe = isWireframe;
+    this.materials.hannamVilla.wireframe = isWireframe;
+    this.materials.bridgeSteel.wireframe = isWireframe;
+    this.materials.leeumTerracotta.wireframe = isWireframe;
 
     if (mode === 'night_lanterns') {
       this.setTimePreset('night');
@@ -620,6 +694,7 @@ export class SceneManager {
   }
 
   public flyTo(position: [number, number, number], target: [number, number, number]) {
+    this.stopBridgeDrive();
     this.targetCamPos = [...position];
     this.targetLookAt = [...target];
     this.isTransitioning = true;
@@ -807,6 +882,17 @@ export class SceneManager {
     const now = performance.now();
     const dt = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
+
+    // Animated Bridge Crossing Drive (남산·한강대교 횡단 시점 주행)
+    if (!this.renderer.xr.isPresenting && this.isBridgeDriving) {
+      this.bridgeDriveProgress = Math.min(1, this.bridgeDriveProgress + dt * 0.085);
+      const pose = evaluateBridgeCrossingPose(this.bridgeDriveProgress);
+      this.camera.position.set(...pose.position);
+      this.controls.target.set(...pose.target);
+      if (this.bridgeDriveProgress >= 1) {
+        this.stopBridgeDrive();
+      }
+    }
 
     // Smooth exponential damped camera transition (when not in WebXR presenting)
     if (!this.renderer.xr.isPresenting && this.isTransitioning && this.targetCamPos && this.targetLookAt) {

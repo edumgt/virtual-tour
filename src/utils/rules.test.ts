@@ -6,6 +6,7 @@ import {
   distance3D,
   clampCameraPosition,
   getZoneOverviewCamera,
+  evaluateBridgeCrossingPose,
   filterLandmarksByZone,
   calculateEavesHeight,
   calculateRafterCount,
@@ -53,7 +54,7 @@ test('clampCameraPosition constrains values within allowable bounds', () => {
   assert.equal(clampedTop[1], 230);
 });
 
-test('getZoneOverviewCamera returns distinct framing for gwanghwamun and jamsil', () => {
+test('getZoneOverviewCamera returns distinct framing for gwanghwamun, jamsil, and namsan_han', () => {
   const gwanghwamunCam = getZoneOverviewCamera('gwanghwamun');
   assert.equal(gwanghwamunCam.defaultLandmarkId, 'gwanghwamun');
   assert.ok(gwanghwamunCam.position[1] < 30);
@@ -61,6 +62,22 @@ test('getZoneOverviewCamera returns distinct framing for gwanghwamun and jamsil'
   const jamsilCam = getZoneOverviewCamera('jamsil');
   assert.equal(jamsilCam.defaultLandmarkId, 'lotte_world_tower');
   assert.ok(jamsilCam.position[1] > 30);
+
+  const namsanHanCam = getZoneOverviewCamera('namsan_han');
+  assert.equal(namsanHanCam.defaultLandmarkId, 'hangang_bridge_crossing');
+  assert.ok(namsanHanCam.position[2] > 100);
+  assert.ok(namsanHanCam.target[2] < 0);
+});
+
+test('evaluateBridgeCrossingPose advances north across the Han River bridge', () => {
+  const startPose = evaluateBridgeCrossingPose(0);
+  const midPose = evaluateBridgeCrossingPose(0.5);
+  const endPose = evaluateBridgeCrossingPose(1);
+
+  assert.equal(startPose.position[2], 138);
+  assert.ok(midPose.position[2] < startPose.position[2] && midPose.position[2] > endPose.position[2]);
+  assert.equal(endPose.position[2], 32);
+  assert.ok(endPose.target[1] > startPose.target[1]);
 });
 
 test('filterLandmarksByZone filters landmarks strictly by active zone', () => {
@@ -68,12 +85,14 @@ test('filterLandmarksByZone filters landmarks strictly by active zone', () => {
     { id: 'a', zone: 'gwanghwamun' as const },
     { id: 'b', zone: 'jamsil' as const },
     { id: 'c', zone: 'jamsil' as const },
+    { id: 'd', zone: 'namsan_han' as const },
   ];
   assert.equal(filterLandmarksByZone(sample, 'gwanghwamun').length, 1);
   assert.equal(filterLandmarksByZone(sample, 'jamsil').length, 2);
+  assert.equal(filterLandmarksByZone(sample, 'namsan_han').length, 1);
   assert.deepEqual(
-    filterLandmarksByZone(sample, 'jamsil').map((x) => x.id),
-    ['b', 'c']
+    filterLandmarksByZone(sample, 'namsan_han').map((x) => x.id),
+    ['d']
   );
 });
 
