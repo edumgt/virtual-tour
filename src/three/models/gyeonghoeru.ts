@@ -40,31 +40,76 @@ export function buildGyeonghoeru(materials: PalaceMaterials): THREE.Group {
   const pondWallRight = pondWallLeft.clone();
   pondWallRight.position.x = 27;
 
-  pondGroup.add(pondWallFront, pondWallBack, pondWallLeft, pondWallRight);
+  const copingFront = new THREE.Mesh(new THREE.BoxGeometry(54.8, 0.16, 1.5), materials.granitePlinth);
+  copingFront.position.set(0, 1.05, 23);
+  const copingBack = copingFront.clone();
+  copingBack.position.z = -23;
+  const copingLeft = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.16, 46.8), materials.granitePlinth);
+  copingLeft.position.set(-27, 1.05, 0);
+  const copingRight = copingLeft.clone();
+  copingRight.position.x = 27;
 
-  // Water Surface Plane (수면)
-  const waterGeo = new THREE.PlaneGeometry(53, 45);
+  pondGroup.add(
+    pondWallFront,
+    pondWallBack,
+    pondWallLeft,
+    pondWallRight,
+    copingFront,
+    copingBack,
+    copingLeft,
+    copingRight
+  );
+
+  // Dark pond bed beneath translucent reflective water
+  const pondBed = new THREE.Mesh(
+    new THREE.PlaneGeometry(53, 45),
+    new THREE.MeshStandardMaterial({ color: 0x0a2229, roughness: 0.96 })
+  );
+  pondBed.rotation.x = -Math.PI * 0.5;
+  pondBed.position.set(0, 0.12, 0);
+  pondGroup.add(pondBed);
+
+  // Subdivided Water Surface Plane (수면)
+  const waterGeo = new THREE.PlaneGeometry(53, 45, 24, 20);
   const water = new THREE.Mesh(waterGeo, materials.waterPond);
   water.rotation.x = -Math.PI * 0.5;
   water.position.set(0, 0.45, 0);
   water.receiveShadow = true;
   pondGroup.add(water);
 
-  // Floating Water Lilies / Lotus Leaves (연잎)
+  // Floating Water Lilies / Lotus Leaves & Pink Lotus Blossoms (연잎과 연꽃)
   const lilyMat = new THREE.MeshStandardMaterial({
     color: 0x2b593f,
-    roughness: 0.7,
+    roughness: 0.72,
     side: THREE.DoubleSide,
   });
-  const lilyGeo = new THREE.CircleGeometry(0.7, 10);
-  for (let i = 0; i < 28; i++) {
-    const lily = new THREE.Mesh(lilyGeo, lilyMat);
-    lily.rotation.x = -Math.PI * 0.5;
-    const lx = (Math.random() - 0.5) * 44;
-    const lz = (Math.random() - 0.5) * 36;
-    if (Math.abs(lx) > 13 || Math.abs(lz) > 11) {
+  const lotusPinkMat = new THREE.MeshStandardMaterial({
+    color: 0xf4a5be,
+    roughness: 0.48,
+  });
+  const lotusWhiteMat = new THREE.MeshStandardMaterial({
+    color: 0xfdf4f7,
+    roughness: 0.46,
+  });
+  const lilyGeo = new THREE.CircleGeometry(0.75, 12, 0.15, Math.PI * 1.85);
+  const bloomGeo = new THREE.ConeGeometry(0.24, 0.34, 7);
+
+  for (let i = 0; i < 34; i++) {
+    const lx = (((i * 37) % 100) / 100 - 0.5) * 44;
+    const lz = (((i * 53) % 100) / 100 - 0.5) * 36;
+    if (Math.abs(lx) > 13.5 || Math.abs(lz) > 11.2) {
+      const lily = new THREE.Mesh(lilyGeo, lilyMat);
+      lily.rotation.x = -Math.PI * 0.5;
+      lily.rotation.z = i * 1.1;
       lily.position.set(lx, 0.47, lz);
       pondGroup.add(lily);
+
+      if (i % 3 === 0) {
+        const bloom = new THREE.Mesh(bloomGeo, i % 6 === 0 ? lotusWhiteMat : lotusPinkMat);
+        bloom.rotation.x = Math.PI;
+        bloom.position.set(lx + 0.12, 0.68, lz - 0.08);
+        pondGroup.add(bloom);
+      }
     }
   }
 

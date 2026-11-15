@@ -1235,5 +1235,473 @@ export function createHannamVillaTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * Creates warm terracotta orange Bavarian scalloped clay roof tile texture (남해 독일마을 주황 지붕)
+ */
+export function createGermanRoofTileTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#c94f26';
+  ctx.fillRect(0, 0, 512, 512);
+
+  const cols = 16;
+  const rows = 16;
+  const colW = 512 / cols;
+  const rowH = 512 / rows;
+
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    const offset = (r % 2) * (colW * 0.5);
+    for (let c = -1; c <= cols; c++) {
+      const x = c * colW + offset;
+      const shade = ((r * 7 + c * 11) % 5) * 8 - 16;
+      const red = Math.min(245, Math.max(170, 206 + shade));
+      const green = Math.min(130, Math.max(58, 79 + Math.floor(shade * 0.6)));
+      const blue = Math.min(70, Math.max(24, 38 + Math.floor(shade * 0.3)));
+
+      ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+      ctx.beginPath();
+      ctx.rect(x + 1, y + 1, colW - 2, rowH - 3);
+      ctx.fill();
+
+      // Tile lap shadow & sun rim highlight
+      ctx.fillStyle = 'rgba(55, 18, 8, 0.42)';
+      ctx.fillRect(x, y + rowH - 4, colW, 4);
+      ctx.fillStyle = 'rgba(255, 195, 145, 0.25)';
+      ctx.fillRect(x + 2, y + 2, colW - 4, 3);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates German Village crisp white-cream lime plaster wall with dark Fachwerk beams, shuttered windows, and flower boxes
+ */
+export function createGermanWallTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  // Clean sunlit Bavarian cream-white stucco
+  ctx.fillStyle = '#f6f2e9';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Subtle plaster grain
+  for (let i = 0; i < 400; i++) {
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.22)' : 'rgba(180,170,150,0.08)';
+    ctx.fillRect((i * 73) % 512, (i * 137) % 512, 3, 3);
+  }
+
+  // Horizontal dark timber floor beam (Fachwerk)
+  ctx.fillStyle = '#472d1c';
+  ctx.fillRect(0, 246, 512, 16);
+  ctx.fillRect(0, 0, 14, 512);
+  ctx.fillRect(498, 0, 14, 512);
+  ctx.fillRect(249, 0, 14, 512);
+
+  // 2 floors x 2 large European casement windows with green/cedar shutters & geranium flower boxes
+  const positions = [
+    [68, 54],
+    [320, 54],
+    [68, 304],
+    [320, 304],
+  ];
+  positions.forEach(([wx, wy]) => {
+    const ww = 124;
+    const wh = 126;
+
+    // Exterior forest-green shutters
+    ctx.fillStyle = '#2d5a42';
+    ctx.fillRect(wx - 24, wy, 20, wh);
+    ctx.fillRect(wx + ww + 4, wy, 20, wh);
+
+    // Window frame & sky-reflective glass panes
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(wx - 4, wy - 4, ww + 8, wh + 8);
+
+    const glassGrad = ctx.createLinearGradient(wx, wy, wx + ww, wy + wh);
+    glassGrad.addColorStop(0, '#2a4d6e');
+    glassGrad.addColorStop(0.5, '#1e354d');
+    glassGrad.addColorStop(1, '#396488');
+    ctx.fillStyle = glassGrad;
+    ctx.fillRect(wx, wy, ww, wh);
+
+    // Warm sunlit interior glow
+    ctx.fillStyle = 'rgba(255, 224, 165, 0.28)';
+    ctx.fillRect(wx + 8, wy + 8, ww - 16, wh - 16);
+
+    // Mullion crossbars
+    ctx.fillStyle = '#f5f2eb';
+    ctx.fillRect(wx + ww * 0.5 - 3, wy, 6, wh);
+    ctx.fillRect(wx, wy + wh * 0.45 - 3, ww, 6);
+
+    // Flower box with red/pink geraniums
+    ctx.fillStyle = '#5c3824';
+    ctx.fillRect(wx - 4, wy + wh + 4, ww + 8, 22);
+    ctx.fillStyle = '#336b38';
+    ctx.fillRect(wx, wy + wh - 6, ww, 12);
+    for (let f = 0; f < 5; f++) {
+      ctx.fillStyle = f % 2 === 0 ? '#e13b4a' : '#f47290';
+      ctx.beginPath();
+      ctx.arc(wx + 14 + f * 24, wy + wh - 4, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates weathered coastal masonry stone texture for Namhae terraced retaining walls (계단식 석축 옹벽)
+ */
+export function createGermanStoneWallTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#a89f91';
+  ctx.fillRect(0, 0, 512, 256);
+
+  const rows = 6;
+  const cols = 8;
+  const rowH = 256 / rows;
+  const colW = 512 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    const offset = (r % 2) * (colW * 0.5);
+    for (let c = -1; c <= cols; c++) {
+      const x = c * colW + offset;
+      const tone = 152 + ((r * 13 + c * 19) % 32) - 16;
+      const warm = 140 + ((r * 7 + c * 11) % 24) - 12;
+      const cool = 126 + ((r * 5 + c * 17) % 20) - 10;
+      ctx.fillStyle = `rgb(${tone}, ${warm}, ${cool})`;
+      ctx.fillRect(x + 2, y + 2, colW - 4, rowH - 4);
+
+      ctx.fillStyle = 'rgba(255, 250, 240, 0.18)';
+      ctx.fillRect(x + 3, y + 3, colW - 6, 3);
+      ctx.fillStyle = 'rgba(55, 48, 40, 0.35)';
+      ctx.fillRect(x + 2, y + rowH - 4, colW - 4, 3);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates European granite cobblestone street texture for German-ro promenade (독일로 돌길)
+ */
+export function createGermanCobbleTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#5c5852';
+  ctx.fillRect(0, 0, 256, 512);
+
+  const rows = 24;
+  const cols = 10;
+  const rowH = 512 / rows;
+  const colW = 256 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    const offset = (r % 2) * (colW * 0.5);
+    for (let c = -1; c <= cols; c++) {
+      const x = c * colW + offset;
+      const shade = 112 + ((r * 11 + c * 7) % 28) - 14;
+      ctx.fillStyle = `rgb(${shade + 6}, ${shade + 2}, ${shade - 4})`;
+      ctx.fillRect(x + 1.5, y + 1.5, colW - 3, rowH - 3);
+    }
+  }
+
+  // Light stone curb bands on both edges
+  ctx.fillStyle = '#cbc4b8';
+  ctx.fillRect(0, 0, 14, 512);
+  ctx.fillRect(242, 0, 14, 512);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates lush coastal hillside grass, moss & clover meadow texture
+ */
+export function createCoastalLawnTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#3f6b3c';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Subtle organic earth & moss patches
+  for (let i = 0; i < 420; i++) {
+    const x = (i * 79 + (i % 7) * 13) % 256;
+    const y = (i * 113 + (i % 5) * 19) % 256;
+    const r = 3 + (i % 6);
+    ctx.fillStyle =
+      i % 4 === 0
+        ? 'rgba(104, 148, 76, 0.28)'
+        : i % 4 === 1
+        ? 'rgba(42, 74, 38, 0.3)'
+        : i % 4 === 2
+        ? 'rgba(72, 108, 56, 0.25)'
+        : 'rgba(116, 102, 72, 0.12)';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Fine grass blade strokes
+  for (let i = 0; i < 900; i++) {
+    const x = (i * 37) % 256;
+    const y = (i * 61) % 256;
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(130, 178, 92, 0.24)' : 'rgba(28, 56, 28, 0.28)';
+    ctx.fillRect(x, y, 1.5, 4);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Synthesizes a seamless tileable tangent-space water wave normal map (DataTexture)
+ * from layered multi-directional periodic capillary/swell waves for realistic PBR water reflections.
+ */
+export function createWaterNormalTexture(): THREE.DataTexture {
+  const size = 256;
+  const data = new Uint8Array(size * size * 4);
+  const twoPi = Math.PI * 2;
+
+  // Periodic wave octaves (integer cycles over [0, 1] guarantee seamless tiling)
+  const waves: [number, number, number][] = [
+    [2, 3, 0.34],
+    [-3, 2, 0.28],
+    [5, -4, 0.18],
+    [-6, -5, 0.14],
+    [9, 7, 0.09],
+    [-8, 11, 0.07],
+    [13, -10, 0.05],
+  ];
+
+  for (let y = 0; y < size; y++) {
+    const v = y / size;
+    for (let x = 0; x < size; x++) {
+      const u = x / size;
+      let dx = 0;
+      let dy = 0;
+
+      for (let w = 0; w < waves.length; w++) {
+        const [kx, ky, amp] = waves[w];
+        const phase = twoPi * (kx * u + ky * v);
+        const c = Math.cos(phase) * amp;
+        dx += kx * c * 0.24;
+        dy += ky * c * 0.24;
+      }
+
+      // Tangent-space normal N = normalize(-dx, -dy, 1)
+      const invLen = 1 / Math.hypot(dx, dy, 1);
+      const nx = -dx * invLen;
+      const ny = -dy * invLen;
+      const nz = 1 * invLen;
+
+      const idx = (y * size + x) * 4;
+      data[idx] = Math.round((nx * 0.5 + 0.5) * 255);
+      data[idx + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      data[idx + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+      data[idx + 3] = 255;
+    }
+  }
+
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/**
+ * Creates furrowed natural tree bark texture (소나무·활엽수 수피 텍스처)
+ */
+export function createTreeBarkTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#4e3929';
+  ctx.fillRect(0, 0, 256, 512);
+
+  // Vertical bark plates & deep fissures
+  for (let i = 0; i < 240; i++) {
+    const x = (i * 19) % 256;
+    const y = (i * 47) % 512;
+    const w = 4 + (i % 8);
+    const h = 24 + (i % 48);
+    ctx.fillStyle =
+      i % 3 === 0
+        ? 'rgba(110, 82, 58, 0.55)'
+        : i % 3 === 1
+        ? 'rgba(40, 26, 18, 0.65)'
+        : 'rgba(135, 96, 66, 0.35)';
+    ctx.fillRect(x, y, w, h);
+  }
+
+  // Subtle lichen & mossy highlights near crevices
+  for (let i = 0; i < 90; i++) {
+    const x = (i * 67) % 256;
+    const y = (i * 89) % 512;
+    ctx.fillStyle = 'rgba(84, 108, 66, 0.25)';
+    ctx.fillRect(x, y, 5, 10);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates dappled leaf cluster foliage texture so tree crowns read as dense natural leaves
+ */
+export function createLeafCanopyTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#3b6837';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Deep interior shadow blotches + sunlit outer leaf clusters
+  for (let i = 0; i < 550; i++) {
+    const x = (i * 53 + (i % 11) * 7) % 256;
+    const y = (i * 97 + (i % 13) * 5) % 256;
+    const rx = 3 + (i % 5);
+    const ry = 2 + (i % 4);
+    const rot = (i * 0.7) % Math.PI;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    if (i % 5 === 0) {
+      ctx.fillStyle = 'rgba(20, 44, 22, 0.65)';
+    } else if (i % 5 === 1 || i % 5 === 2) {
+      ctx.fillStyle = 'rgba(72, 122, 62, 0.72)';
+    } else if (i % 5 === 3) {
+      ctx.fillStyle = 'rgba(116, 168, 86, 0.62)';
+    } else {
+      ctx.fillStyle = 'rgba(46, 86, 44, 0.68)';
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates delicate multi-petal sakura cherry blossom cluster texture (왕벚꽃 잎 텍스처)
+ */
+export function createBlossomCanopyTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#eab3c6';
+  ctx.fillRect(0, 0, 256, 256);
+
+  for (let i = 0; i < 650; i++) {
+    const x = (i * 47 + (i % 9) * 11) % 256;
+    const y = (i * 83 + (i % 7) * 13) % 256;
+    const r = 2.5 + (i % 4);
+    ctx.fillStyle =
+      i % 6 === 0
+        ? 'rgba(130, 74, 92, 0.35)' // twig depth
+        : i % 3 === 0
+        ? 'rgba(255, 240, 245, 0.85)'
+        : 'rgba(247, 174, 200, 0.78)';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates weathered coastal granite & mountain crag rock texture (화강암 암반·테트라포드 텍스처)
+ */
+export function createCoastalRockTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#7b7870';
+  ctx.fillRect(0, 0, 256, 256);
+
+  for (let i = 0; i < 600; i++) {
+    const x = (i * 59) % 256;
+    const y = (i * 101) % 256;
+    const s = 2 + (i % 6);
+    ctx.fillStyle =
+      i % 3 === 0
+        ? 'rgba(220, 215, 205, 0.22)'
+        : i % 3 === 1
+        ? 'rgba(48, 45, 42, 0.32)'
+        : 'rgba(138, 130, 118, 0.25)';
+    ctx.fillRect(x, y, s, s * 0.7);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 
 

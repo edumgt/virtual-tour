@@ -19,3 +19,20 @@ canvas {
   outline: none;
   touch-action: none;
 }
+
+.lnb-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.lnb-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lnb-scroll::-webkit-scrollbar-thumb {
+  background: rgba(168, 162, 158, 0.25);
+  border-radius: 9999px;
+}
+
+.lnb-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 162, 158, 0.45);
+}

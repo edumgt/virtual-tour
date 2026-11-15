@@ -1,209 +1,125 @@
 import React from 'react';
-import { Volume2, Compass, BookOpen, Languages, Glasses, Landmark, Building2, Mountain } from 'lucide-react';
-import { soundController } from '../audio/traditionalAudio';
+import { Menu, Compass, BookOpen, Glasses } from 'lucide-react';
 import { SceneZone } from '../types';
 
 interface HeaderBarProps {
   activeZone: SceneZone;
-  onSelectZone: (zone: SceneZone) => void;
   currentLandmarkName: string;
   isAutoRotate: boolean;
   onToggleAutoRotate: () => void;
   onOpenInfo: () => void;
   onOpenVr: () => void;
   isVrActive: boolean;
+  onOpenMobileMenu: () => void;
   lang: 'ko' | 'en';
-  onToggleLang: () => void;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
   activeZone,
-  onSelectZone,
+  currentLandmarkName,
   isAutoRotate,
   onToggleAutoRotate,
   onOpenInfo,
   onOpenVr,
   isVrActive,
+  onOpenMobileMenu,
   lang,
-  onToggleLang,
 }) => {
-  const [isAudioPlaying, setIsAudioPlaying] = React.useState(false);
-
-  const toggleSound = () => {
-    const playing = soundController.toggleAmbientSoundscape();
-    setIsAudioPlaying(playing);
-    if (playing) {
-      soundController.playBell(780);
-    }
-  };
-
   const isJamsil = activeZone === 'jamsil';
   const isNamsan = activeZone === 'namsan_han';
+  const isNamhae = activeZone === 'namhae_german';
+
+  const zoneTitle = isJamsil
+    ? lang === 'ko'
+      ? '석촌호수 & 롯데타워'
+      : 'Seokchon Lake & Lotte Tower'
+    : isNamsan
+    ? lang === 'ko'
+      ? '남산 & 한남 · 한강대교'
+      : 'Namsan & Han River'
+    : isNamhae
+    ? lang === 'ko'
+      ? '남해 독일마을 & 물건항'
+      : 'Namhae German Village'
+    : lang === 'ko'
+    ? '경복궁 & 광화문'
+    : 'Gyeongbokgung & Gwanghwamun';
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none p-2.5 sm:p-4 flex flex-wrap items-center justify-between gap-2">
-      {/* Title & District Seal */}
-      <div className="pointer-events-auto bg-stone-900/95 text-stone-100 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-stone-700/80 shadow-xl flex items-center gap-2 sm:gap-3">
-        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-600/30 border border-amber-500/50 flex items-center justify-center font-serif text-amber-300 font-bold text-xs sm:text-sm shrink-0">
-          {isJamsil ? '湖' : isNamsan ? '南' : '景'}
+    <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none p-3 sm:p-4 flex items-center justify-between gap-3">
+      {/* Left Context Lockup + Mobile LNB Trigger */}
+      <div className="pointer-events-auto bg-stone-900/90 text-stone-100 px-3 py-2 rounded-xl border border-stone-700/80 shadow-lg flex items-center gap-2.5 min-w-0">
+        <button
+          type="button"
+          onClick={onOpenMobileMenu}
+          aria-label={lang === 'ko' ? '탐방 메뉴 열기' : 'Open navigation menu'}
+          className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 shrink-0"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
+        <div className="w-7 h-7 rounded-lg bg-amber-600/25 border border-amber-500/45 flex items-center justify-center font-serif text-amber-300 font-bold text-xs shrink-0">
+          {isJamsil ? '湖' : isNamsan ? '南' : isNamhae ? '海' : '景'}
         </div>
-        <div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <h1 className="font-serif font-bold text-xs sm:text-base tracking-wide text-amber-100 whitespace-nowrap">
-              {isJamsil
-                ? lang === 'ko'
-                  ? '석촌호수 & 롯데타워'
-                  : 'Seokchon Lake & Lotte Tower'
-                : isNamsan
-                ? lang === 'ko'
-                  ? '남산 & 한남 · 한강대교'
-                  : 'Namsan & Han River'
-                : lang === 'ko'
-                ? '경복궁 & 광화문'
-                : 'Gyeongbokgung'}
-            </h1>
-            <span className="text-[10px] sm:text-xs px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-700/60 font-mono hidden xs:inline">
-              3D
-            </span>
-          </div>
-          <p className="text-[10px] text-stone-400 hidden sm:block">
-            {isJamsil
-              ? lang === 'ko'
-                ? '잠실 롯데월드·마천루·수변 공원 3D 탐방'
-                : 'Jamsil Landmark & Lakeside 3D'
-              : isNamsan
-              ? lang === 'ko'
-                ? '남산서울타워·한남동·한강 교량 횡단 3D'
-                : 'N Seoul Tower, Hannam & Bridge Crossing'
-              : lang === 'ko'
-              ? '디지털 문화유산 3D 탐방'
-              : 'Joseon Dynasty 3D Heritage'}
-          </p>
+
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="font-serif font-bold text-xs sm:text-sm tracking-wide text-amber-100 whitespace-nowrap shrink-0">
+            {zoneTitle}
+          </h1>
+          <span aria-hidden="true" className="text-stone-500 hidden sm:inline">
+            ·
+          </span>
+          <span className="text-xs text-stone-300 truncate hidden sm:inline max-w-[220px]">
+            {currentLandmarkName}
+          </span>
         </div>
       </div>
 
-      {/* GNB District Switcher (광화문·경복궁 / 석촌호수·롯데타워 / 남산·한남·한강대교) */}
-      <nav
-        aria-label={lang === 'ko' ? '서울 3D 구역 선택' : 'Seoul 3D District Navigation'}
-        className="pointer-events-auto order-3 lg:order-2 w-full lg:w-auto flex items-center justify-center bg-stone-900/95 p-1 rounded-xl border border-stone-700/80 shadow-xl gap-1 overflow-x-auto"
-      >
+      {/* Right Compact Viewport Quick Actions (keeps center sky clear) */}
+      <div className="pointer-events-auto flex items-center gap-1.5 bg-stone-900/90 text-stone-200 p-1 rounded-xl border border-stone-700/80 shadow-lg text-xs shrink-0">
         <button
           type="button"
-          data-zone="gwanghwamun"
-          aria-pressed={activeZone === 'gwanghwamun'}
-          onClick={() => onSelectZone('gwanghwamun')}
-          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-            activeZone === 'gwanghwamun'
-              ? 'bg-amber-600 text-white shadow'
-              : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
-          }`}
-        >
-          <Landmark className="w-3.5 h-3.5 shrink-0" />
-          <span>{lang === 'ko' ? '광화문 · 경복궁' : 'Gwanghwamun'}</span>
-        </button>
-
-        <button
-          type="button"
-          data-zone="jamsil"
-          aria-pressed={activeZone === 'jamsil'}
-          onClick={() => onSelectZone('jamsil')}
-          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-            activeZone === 'jamsil'
-              ? 'bg-amber-600 text-white shadow'
-              : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
-          }`}
-        >
-          <Building2 className="w-3.5 h-3.5 shrink-0" />
-          <span>{lang === 'ko' ? '석촌호수 · 롯데타워' : 'Seokchon · Lotte'}</span>
-        </button>
-
-        <button
-          type="button"
-          data-zone="namsan_han"
-          aria-pressed={activeZone === 'namsan_han'}
-          onClick={() => onSelectZone('namsan_han')}
-          className={`flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-            activeZone === 'namsan_han'
-              ? 'bg-amber-600 text-white shadow'
-              : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
-          }`}
-        >
-          <Mountain className="w-3.5 h-3.5 shrink-0" />
-          <span>{lang === 'ko' ? '남산 · 한남 · 한강대교' : 'Namsan · Han River'}</span>
-        </button>
-      </nav>
-
-      {/* Action Controls */}
-      <div className="pointer-events-auto order-2 lg:order-3 flex items-center gap-1 sm:gap-2 bg-stone-900/95 text-stone-200 p-1 sm:p-1.5 rounded-xl border border-stone-700/80 shadow-xl text-xs">
-        {/* Heritage Guide Modal Trigger */}
-        <button
           onClick={onOpenInfo}
-          className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 transition-colors whitespace-nowrap"
           title={lang === 'ko' ? '명소 해설 도슨트' : 'Landmark Docent Info'}
         >
           <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-          <span className="hidden md:inline font-medium">
-            {lang === 'ko' ? '명소 해설' : 'Docent Guide'}
+          <span className="hidden sm:inline font-medium">
+            {lang === 'ko' ? '명소 해설' : 'Docent'}
           </span>
         </button>
 
-        {/* Auto Orbit Tour */}
         <button
+          type="button"
           onClick={onToggleAutoRotate}
-          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
             isAutoRotate
               ? 'bg-amber-600 text-white font-medium'
               : 'bg-stone-800 hover:bg-stone-700 text-stone-200'
           }`}
-          title={lang === 'ko' ? '360도 자동 회전 투어' : 'Auto 360 Tour'}
+          title={lang === 'ko' ? '360도 자율 투어' : 'Auto 360 Tour'}
         >
           <Compass className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">
+          <span className="hidden sm:inline">
             {lang === 'ko' ? (isAutoRotate ? '회전 중' : '자율 투어') : 'Auto Tour'}
           </span>
         </button>
 
-        {/* Immersive VR Mode Trigger Button */}
         <button
+          type="button"
           onClick={onOpenVr}
           data-testid="vr-mode-button"
-          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
             isVrActive
-              ? 'bg-cyan-600 text-white font-medium shadow-md ring-1 ring-cyan-300'
-              : 'bg-stone-800 hover:bg-stone-700 text-cyan-300 hover:text-cyan-200'
+              ? 'bg-cyan-600 text-white font-medium'
+              : 'bg-stone-800 hover:bg-stone-700 text-cyan-300'
           }`}
           title={lang === 'ko' ? 'WebXR & 카드보드 VR 모드' : 'WebXR & Cardboard VR Mode'}
         >
           <Glasses className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="hidden md:inline font-medium">
+          <span className="hidden sm:inline font-medium">
             {lang === 'ko' ? (isVrActive ? 'VR 종료' : 'VR 모드') : isVrActive ? 'Exit VR' : 'VR Mode'}
           </span>
-        </button>
-
-        {/* Traditional Korean Court Soundscape */}
-        <button
-          onClick={toggleSound}
-          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-colors ${
-            isAudioPlaying
-              ? 'bg-emerald-800/80 text-emerald-200 border border-emerald-600/50'
-              : 'bg-stone-800 hover:bg-stone-700 text-stone-300'
-          }`}
-          title={lang === 'ko' ? '가야금·풍경소리 국악 사운드스케이프' : 'Traditional Court Music'}
-        >
-          <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="hidden md:inline">
-            {lang === 'ko' ? (isAudioPlaying ? '궁중 음향' : '풍경음') : 'Audio'}
-          </span>
-        </button>
-
-        {/* Language Switcher */}
-        <button
-          onClick={onToggleLang}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-xs"
-          title="한국어 / English"
-        >
-          <Languages className="w-3 h-3 text-amber-400" />
-          <span>{lang === 'ko' ? 'KO' : 'EN'}</span>
         </button>
       </div>
     </header>

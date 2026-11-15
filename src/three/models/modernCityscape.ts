@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { PalaceMaterials } from '../materials';
+import {
+  createRealisticBroadleafTrunkGeometry,
+  createRealisticBroadleafCrownGeometry,
+} from './realisticTrees';
 
 /**
  * Creates modern Gwanghwamun Crossroad & Sejong-daero skyscrapers and streetscape:
@@ -9,7 +13,7 @@ import { PalaceMaterials } from '../materials';
  * 4. KT Gwanghwamun High-Rise Tower (KT 광화문빌딩)
  * 5. Kyobo Life Insurance Building (교보생명 빌딩 - César Pelli design)
  * 6. Ilmin Museum / Dong-A Media Center (일민미술관 & 동아미디어센터)
- * 7. Gwanghwamun Crossroad Avenue (광화문 사거리 도로망, 횡단보도, 가로등, 도심 차량)
+ * 7. Gwanghwamun Crossroad Avenue (광화문 사거리 도로망, 횡단보도, 가로등, 느티나무 가로수, 도심 차량)
  */
 export function buildModernCityscape(materials: PalaceMaterials): THREE.Group {
   const root = new THREE.Group();
@@ -78,6 +82,19 @@ export function buildModernCityscape(materials: PalaceMaterials): THREE.Group {
   const flagMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6), flagMat);
   flagMesh.position.set(21.3, 8.8, 0);
 
+  // Glass entrance canopy & rooftop HVAC cooling louver units
+  const govCanopy = new THREE.Mesh(
+    new THREE.BoxGeometry(5.5, 0.35, 16),
+    materials.modernGlass
+  );
+  govCanopy.position.set(24.5, 4.6, 0);
+
+  const govHvac = new THREE.Mesh(
+    new THREE.BoxGeometry(9, 2.2, 6),
+    materials.modernMullion
+  );
+  govHvac.position.set(-8, 53.1, 6);
+
   govGroup.add(
     govMainTower,
     govNorthWing,
@@ -86,7 +103,9 @@ export function buildModernCityscape(materials: PalaceMaterials): THREE.Group {
     antennaPole,
     govPodium,
     flagpole,
-    flagMesh
+    flagMesh,
+    govCanopy,
+    govHvac
   );
   root.add(govGroup);
 
@@ -231,7 +250,19 @@ export function buildModernCityscape(materials: PalaceMaterials): THREE.Group {
   );
   ktAntenna.position.set(0, 75, 0);
 
-  ktGroup.add(ktMainTower, ktCore, ktCrown, ktAntenna);
+  const ktEntranceCanopy = new THREE.Mesh(
+    new THREE.BoxGeometry(4.8, 0.35, 14),
+    materials.modernGlass
+  );
+  ktEntranceCanopy.position.set(-18.2, 4.8, 0);
+
+  const ktHvac = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 2.4, 8),
+    materials.modernConcrete
+  );
+  ktHvac.position.set(-4, 69.2, 0);
+
+  ktGroup.add(ktMainTower, ktCore, ktCrown, ktAntenna, ktEntranceCanopy, ktHvac);
   root.add(ktGroup);
 
   // ========================================================
@@ -424,6 +455,43 @@ export function buildModernCityscape(materials: PalaceMaterials): THREE.Group {
     lamp.add(pole, arm, head);
     streetGroup.add(lamp);
   });
+
+  // (5b) Sejong-daero Zelkova Broadleaf Street Trees (세종대로 느티나무 가로수 - InstancedMesh)
+  const boulevardTreeCoords: [number, number][] = [];
+  [44, 62, 78, 96, 112, 128, 174].forEach((tz) => {
+    boulevardTreeCoords.push([-17.2, tz], [17.2, tz]);
+  });
+  [48, 72, 92, 118, 132].forEach((tz) => {
+    boulevardTreeCoords.push([-40.5, tz], [40.5, tz]);
+  });
+  const sTrunkGeo = createRealisticBroadleafTrunkGeometry();
+  const sCrownGeo = createRealisticBroadleafCrownGeometry();
+  const sTrunks = new THREE.InstancedMesh(sTrunkGeo, materials.treeBark, boulevardTreeCoords.length);
+  const sCrowns = new THREE.InstancedMesh(sCrownGeo, materials.leafCanopy, boulevardTreeCoords.length);
+  sTrunks.castShadow = true;
+  sCrowns.castShadow = true;
+  sCrowns.receiveShadow = true;
+  const sDummy = new THREE.Object3D();
+  const sColor = new THREE.Color();
+  const sPalette = [0x3d7a42, 0x4b8a49, 0x346b3b, 0x5c964c];
+
+  boulevardTreeCoords.forEach(([tx, tz], idx) => {
+    const s = 0.9 + (idx % 3) * 0.1;
+    sDummy.position.set(tx, 0, tz);
+    sDummy.scale.set(s, s, s);
+    sDummy.rotation.set(0, idx * 1.4, 0);
+    sDummy.updateMatrix();
+    sTrunks.setMatrixAt(idx, sDummy.matrix);
+    sCrowns.setMatrixAt(idx, sDummy.matrix);
+    sColor.setHex(sPalette[idx % sPalette.length]);
+    sCrowns.setColorAt(idx, sColor);
+  });
+  sTrunks.instanceMatrix.needsUpdate = true;
+  sCrowns.instanceMatrix.needsUpdate = true;
+  if (sCrowns.instanceColor) sCrowns.instanceColor.needsUpdate = true;
+  sTrunks.computeBoundingSphere();
+  sCrowns.computeBoundingSphere();
+  streetGroup.add(sTrunks, sCrowns);
 
   // (6) Modern City Vehicles (서울 택시, 버스, 승용차 3D 모델)
   const vehicleMatBlue = new THREE.MeshStandardMaterial({ color: 0x1d55a8, roughness: 0.3 }); // 간선버스 (Blue)

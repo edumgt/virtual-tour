@@ -14,6 +14,7 @@ import { buildSurroundings } from './models/surroundings';
 import { buildModernCityscape } from './models/modernCityscape';
 import { buildSeokchonLotte } from './models/seokchonLotte';
 import { buildNamsanHannamBridge } from './models/namsanHannamBridge';
+import { buildNamhaeGermanVillage } from './models/namhaeGermanVillage';
 
 export interface SceneManagerOptions {
   container: HTMLDivElement;
@@ -69,16 +70,18 @@ export class SceneManager {
   private targetLookAt: [number, number, number] | null = null;
   private isTransitioning = false;
 
-  // District Zones (광화문·경복궁 vs 석촌호수·롯데타워 vs 남산·한남·한강대교)
+  // District Zones (광화문·경복궁 / 석촌호수·롯데타워 / 남산·한남·한강대교 / 남해·독일마을)
   private currentZone: SceneZone = 'gwanghwamun';
   private gwanghwamunGroup = new THREE.Group();
   private jamsilGroup = new THREE.Group();
   private namsanHanGroup = new THREE.Group();
+  private namhaeGermanGroup = new THREE.Group();
 
   // Bridge Crossing Animated Drive State
   private isBridgeDriving = false;
   private bridgeDriveProgress = 0;
   private onBridgeDriveStateChange?: (isDriving: boolean) => void;
+  private resizeObserver: ResizeObserver | null = null;
 
   // Landmarks & Raycasting
   private raycaster = new THREE.Raycaster();
@@ -184,8 +187,8 @@ export class SceneManager {
       }
     });
 
-    // Initialize Materials & Lighting
-    this.materials = initPalaceMaterials();
+    // Initialize Materials & Lighting (passing max texture anisotropy for crisp grazing angles)
+    this.materials = initPalaceMaterials(this.renderer.capabilities.getMaxAnisotropy());
 
     this.sunLight = new THREE.DirectionalLight(0xfffaed, 2.2);
     this.sunLight.position.set(40, 65, 35);
@@ -217,6 +220,12 @@ export class SceneManager {
 
     // Event Listeners
     window.addEventListener('resize', this.handleResize);
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.handleResize();
+      });
+      this.resizeObserver.observe(this.container);
+    }
     this.renderer.domElement.addEventListener('pointerdown', this.handlePointerDown);
 
     // Start Animation Loop
@@ -321,6 +330,28 @@ export class SceneManager {
     this.namsanHanGroup.visible = this.currentZone === 'namsan_han';
     this.scene.add(this.namsanHanGroup);
 
+    // ========================================================
+    // Zone D: Namhae German Village & Mulgeon Bay (남해 독일마을 구역)
+    // ========================================================
+    this.namhaeGermanGroup.name = 'zone_namhae_german';
+    const namhaeVillage = buildNamhaeGermanVillage(this.materials);
+    this.namhaeGermanGroup.add(namhaeVillage);
+
+    // Night accent lights (Padoch Exhibition Plaza & Mulgeon Lighthouse)
+    const namhaeLanternSpots = [
+      [0, 26, -44], // Padoch Exhibition Hall & Deutscher Platz
+      [-48, 16, 70], // Mulgeon Breakwater Lighthouse
+    ];
+    namhaeLanternSpots.forEach(([lx, ly, lz]) => {
+      const pl = new THREE.PointLight(0xffbb66, 0.0, 70, 1.5);
+      pl.position.set(lx, ly, lz);
+      this.namhaeGermanGroup.add(pl);
+      this.lanternLights.push(pl);
+    });
+
+    this.namhaeGermanGroup.visible = this.currentZone === 'namhae_german';
+    this.scene.add(this.namhaeGermanGroup);
+
     // Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 및 현대 랜드마크 마커)
     this.createDiscoveryMarkers();
   }
@@ -358,6 +389,12 @@ export class SceneManager {
       { id: 'hannam_dong', zone: 'namsan_han', pos: [-34, 18, -37] },
       { id: 'namsan_mountain', zone: 'namsan_han', pos: [-10.5, 53, -96] },
       { id: 'hangang_river_park', zone: 'namsan_han', pos: [66, 8.5, 72] },
+      // Namhae German Village & Mulgeon Bay Landmarks
+      { id: 'namhae_village_overview', zone: 'namhae_german', pos: [0, 18, -14] },
+      { id: 'padoch_memorial', zone: 'namhae_german', pos: [0, 32, -46] },
+      { id: 'mulgeon_forest', zone: 'namhae_german', pos: [0, 8, 28] },
+      { id: 'mulgeon_lighthouse', zone: 'namhae_german', pos: [-48, 19, 70] },
+      { id: 'german_terraced_villas', zone: 'namhae_german', pos: [-40, 13, -6] },
     ];
 
     const beaconGeo = new THREE.SphereGeometry(0.7, 12, 10);
@@ -390,6 +427,8 @@ export class SceneManager {
           ? this.jamsilGroup
           : item.zone === 'namsan_han'
           ? this.namsanHanGroup
+          : item.zone === 'namhae_german'
+          ? this.namhaeGermanGroup
           : this.gwanghwamunGroup;
       targetParent.add(markerGroup);
 
@@ -565,11 +604,12 @@ export class SceneManager {
 
       this.ambientLight.intensity = config.ambientIntensity;
 
+      const isPanoramicZone = this.currentZone !== 'gwanghwamun';
       this.scene.background = new THREE.Color(config.fogColor);
       if (this.scene.fog instanceof THREE.Fog) {
         this.scene.fog.color.setHex(config.fogColor);
-        this.scene.fog.near = config.fogNear;
-        this.scene.fog.far = config.fogFar;
+        this.scene.fog.near = isPanoramicZone ? Math.max(config.fogNear, 150) : config.fogNear;
+        this.scene.fog.far = isPanoramicZone ? Math.max(config.fogFar, 560) : config.fogFar;
       }
 
       this.renderer.toneMappingExposure = config.exposure;
@@ -624,9 +664,10 @@ export class SceneManager {
     this.gwanghwamunGroup.visible = zone === 'gwanghwamun';
     this.jamsilGroup.visible = zone === 'jamsil';
     this.namsanHanGroup.visible = zone === 'namsan_han';
+    this.namhaeGermanGroup.visible = zone === 'namhae_german';
 
     if (!this.isSoftwareGl) {
-      const bound = zone === 'namsan_han' ? 140 : zone === 'jamsil' ? 130 : 60;
+      const bound = zone === 'namsan_han' || zone === 'namhae_german' ? 140 : zone === 'jamsil' ? 130 : 60;
       this.sunLight.shadow.camera.left = -bound;
       this.sunLight.shadow.camera.right = bound;
       this.sunLight.shadow.camera.top = bound;
@@ -642,9 +683,16 @@ export class SceneManager {
     this.camera.position.set(...overview.position);
     this.controls.target.set(...overview.target);
     this.controls.update();
+    this.applyAtmosphere();
     if (!this.renderer.xr.isPresenting) {
       this.renderer.render(this.scene, this.camera);
     }
+  }
+
+  public resetZoneOverview() {
+    this.stopBridgeDrive();
+    const overview = getZoneOverviewCamera(this.currentZone);
+    this.flyTo(overview.position, overview.target);
   }
 
   public startBridgeDrive() {
@@ -687,6 +735,19 @@ export class SceneManager {
     this.materials.hannamVilla.wireframe = isWireframe;
     this.materials.bridgeSteel.wireframe = isWireframe;
     this.materials.leeumTerracotta.wireframe = isWireframe;
+    this.materials.germanRoofTile.wireframe = isWireframe;
+    this.materials.germanHouseWall.wireframe = isWireframe;
+    this.materials.namhaeStoneWall.wireframe = isWireframe;
+    this.materials.namhaeCobbleRoad.wireframe = isWireframe;
+    this.materials.namhaeLawn.wireframe = isWireframe;
+    this.materials.treeBark.wireframe = isWireframe;
+    this.materials.leafCanopy.wireframe = isWireframe;
+    this.materials.blossomCanopy.wireframe = isWireframe;
+    this.materials.coastalRock.wireframe = isWireframe;
+    this.materials.waterPond.wireframe = isWireframe;
+    this.materials.seokchonWater.wireframe = isWireframe;
+    this.materials.hanRiverWater.wireframe = isWireframe;
+    this.materials.namhaeSeaWater.wireframe = isWireframe;
 
     if (mode === 'night_lanterns') {
       this.setTimePreset('night');
@@ -927,8 +988,9 @@ export class SceneManager {
       }
     }
 
-    // Update environmental weather particles (snow or rain)
+    // Update environmental weather particles (snow or rain) and live water wave shaders
     this.updateWeather(dt, now * 0.001);
+    this.materials.updateWaterTime(now * 0.001);
 
     if (this.renderer.xr.isPresenting) {
       // In WebXR presenting mode, Three.js internal XRManager renders stereoscopic views
@@ -984,6 +1046,10 @@ export class SceneManager {
     }
 
     window.removeEventListener('resize', this.handleResize);
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     this.renderer.domElement.removeEventListener('pointerdown', this.handlePointerDown);
 
     // Dispose Weather Particle Systems

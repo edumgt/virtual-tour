@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { SceneManager } from './three/sceneManager';
 import { HeaderBar } from './components/HeaderBar';
-import { NavigationDock } from './components/NavigationDock';
+import { LeftNavigationBar } from './components/LeftNavigationBar';
 import { HeritageModal } from './components/HeritageModal';
 import { VrModeModal } from './components/VrModeModal';
 import { VrActiveOverlay } from './components/VrActiveOverlay';
@@ -27,6 +27,8 @@ export default function App() {
   const [lang, setLang] = useState<'ko' | 'en'>('ko');
   const [showQuickGuide, setShowQuickGuide] = useState<boolean>(true);
   const [isBridgeDriving, setIsBridgeDriving] = useState<boolean>(false);
+  const [isLnbExpanded, setIsLnbExpanded] = useState<boolean>(true);
+  const [isMobileLnbOpen, setIsMobileLnbOpen] = useState<boolean>(false);
 
   // Check WebXR device capability on mount
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function App() {
     };
   }, []);
 
-  // Handle GNB Zone Switch
+  // Handle LNB Zone Switch
   const handleSelectZone = (zone: SceneZone) => {
     if (zone === activeZone) return;
     setActiveZone(zone);
@@ -88,7 +90,18 @@ export default function App() {
     if (sceneManagerRef.current) {
       sceneManagerRef.current.setZone(zone);
     }
-    soundController.playGayageumNote(zone === 'jamsil' ? 587 : zone === 'namsan_han' ? 659 : 440);
+    soundController.playGayageumNote(
+      zone === 'jamsil' ? 587 : zone === 'namsan_han' ? 659 : zone === 'namhae_german' ? 784 : 440
+    );
+  };
+
+  // Reset camera to active zone overview
+  const handleResetOverview = () => {
+    const overview = getZoneOverviewCamera(activeZone);
+    setSelectedLandmarkId(overview.defaultLandmarkId);
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.resetZoneOverview();
+    }
   };
 
   // Handle Han River Bridge Crossing Scenic Drive
@@ -200,23 +213,31 @@ export default function App() {
     LANDMARKS.find((l) => l.id === selectedLandmarkId) || zoneLandmarks[0] || LANDMARKS[0];
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-stone-950 font-sans select-none">
-      {/* 3D WebGL Canvas Host */}
-      <div
-        ref={mountRef}
-        data-testid="three-canvas-container"
-        className="w-full h-full cursor-grab active:cursor-grabbing"
-      />
-
-      {/* Header Bar (GNB) */}
+    <div className="relative flex w-screen h-screen overflow-hidden bg-stone-950 font-sans select-none">
+      {/* Gemini-Style Collapsible Left Navigation Bar (LNB) */}
       {!vrState.isPresenting && (
-        <HeaderBar
+        <LeftNavigationBar
+          isExpanded={isLnbExpanded}
+          onToggleExpand={() => setIsLnbExpanded((prev) => !prev)}
+          isMobileOpen={isMobileLnbOpen}
+          onCloseMobile={() => setIsMobileLnbOpen(false)}
           activeZone={activeZone}
           onSelectZone={handleSelectZone}
-          currentLandmarkName={lang === 'ko' ? currentLandmark.nameKo : currentLandmark.nameEn}
+          onResetOverview={handleResetOverview}
+          landmarks={zoneLandmarks}
+          selectedLandmarkId={selectedLandmarkId}
+          onSelectLandmark={handleSelectLandmark}
+          onOpenInfo={() => setIsInfoOpen(true)}
+          timePreset={timePreset}
+          onSetTimePreset={handleSetTimePreset}
+          weather={weather}
+          onSetWeather={handleSetWeather}
+          renderingMode={renderingMode}
+          onSetRenderingMode={handleSetRenderingMode}
+          isBridgeDriving={isBridgeDriving}
+          onToggleBridgeDrive={handleToggleBridgeDrive}
           isAutoRotate={isAutoRotate}
           onToggleAutoRotate={handleToggleAutoRotate}
-          onOpenInfo={() => setIsInfoOpen(true)}
           onOpenVr={handleOpenVr}
           isVrActive={vrState.isPresenting}
           lang={lang}
@@ -224,46 +245,50 @@ export default function App() {
         />
       )}
 
-      {/* Interaction Floating Banner / Guide Pill */}
-      {showQuickGuide && !vrState.isPresenting && (
-        <div className="absolute top-28 lg:top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[92vw] max-w-md sm:max-w-xl">
-          <div className="bg-stone-900/95 text-amber-200 text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-amber-600/50 shadow-xl flex items-center justify-between gap-2">
-            <span className="truncate">
-              {lang === 'ko'
-                ? '💡 상단 GNB에서 광화문·석촌호수·남산 한강대교를 전환해 보세요 · 드래그 회전 · 휠 줌'
-                : '💡 Switch districts in the top GNB · Drag to rotate · Scroll to zoom'}
-            </span>
-            <button
-              onClick={() => setShowQuickGuide(false)}
-              className="pointer-events-auto text-stone-400 hover:text-white shrink-0 px-1"
-              title="닫기"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Collapsible Navigation Dock */}
-      {!vrState.isPresenting && (
-        <NavigationDock
-          activeZone={activeZone}
-          landmarks={zoneLandmarks}
-          selectedLandmarkId={selectedLandmarkId}
-          onSelectLandmark={handleSelectLandmark}
-          timePreset={timePreset}
-          onSetTimePreset={handleSetTimePreset}
-          renderingMode={renderingMode}
-          onSetRenderingMode={handleSetRenderingMode}
-          weather={weather}
-          onSetWeather={handleSetWeather}
-          isBridgeDriving={isBridgeDriving}
-          onToggleBridgeDrive={handleToggleBridgeDrive}
-          onOpenVr={handleOpenVr}
-          isVrActive={vrState.isPresenting}
-          lang={lang}
+      {/* Main 3D Viewport Stage */}
+      <div className="relative flex-1 min-w-0 h-full overflow-hidden">
+        {/* 3D WebGL Canvas Host */}
+        <div
+          ref={mountRef}
+          data-testid="three-canvas-container"
+          className="w-full h-full cursor-grab active:cursor-grabbing"
         />
-      )}
+
+        {/* Minimal Top Viewport Context & Quick Action Bar */}
+        {!vrState.isPresenting && (
+          <HeaderBar
+            activeZone={activeZone}
+            currentLandmarkName={lang === 'ko' ? currentLandmark.nameKo : currentLandmark.nameEn}
+            isAutoRotate={isAutoRotate}
+            onToggleAutoRotate={handleToggleAutoRotate}
+            onOpenInfo={() => setIsInfoOpen(true)}
+            onOpenVr={handleOpenVr}
+            isVrActive={vrState.isPresenting}
+            onOpenMobileMenu={() => setIsMobileLnbOpen(true)}
+            lang={lang}
+          />
+        )}
+
+        {/* Brief Interaction Hint */}
+        {showQuickGuide && !vrState.isPresenting && (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[90%] max-w-md">
+            <div className="bg-stone-900/90 text-amber-200 text-xs px-4 py-2 rounded-full border border-amber-600/40 shadow-xl flex items-center justify-between gap-2">
+              <span className="truncate">
+                {lang === 'ko'
+                  ? '좌측 메뉴에서 서울 구역·명소·날씨를 선택하세요 · 드래그 회전 · 휠 줌'
+                  : 'Select districts, landmarks & weather from the left menu · Drag to rotate'}
+              </span>
+              <button
+                onClick={() => setShowQuickGuide(false)}
+                className="pointer-events-auto text-stone-400 hover:text-white shrink-0 px-1"
+                title={lang === 'ko' ? '닫기' : 'Dismiss'}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* In-VR Active HUD Overlay (Exit VR & Teleport Controls) */}
       <VrActiveOverlay

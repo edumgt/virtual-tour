@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { PalaceMaterials } from '../materials';
+import {
+  createCherryBlossomTrunkGeometry,
+  createCherryBlossomCrownGeometry,
+} from './realisticTrees';
 
 /**
  * Builds the Seokchon Lake (East & West Lakes), Lotte World Tower (123F),
@@ -13,14 +17,11 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   // ========================================================
   // 1. Park Turf & Lake Promenade Grounds
   // ========================================================
-  const parkMat = new THREE.MeshStandardMaterial({
-    color: 0x3b5e3c,
-    roughness: 0.92,
-    metalness: 0.0,
-  });
-
   // Southern Seokchon Lake Parkland (Continuous lakeside park lawn & sidewalks)
-  const lakeParkBase = new THREE.Mesh(new THREE.BoxGeometry(340, 0.12, 130), parkMat);
+  const lakeParkBase = new THREE.Mesh(
+    new THREE.BoxGeometry(340, 0.12, 130),
+    materials.namhaeLawn
+  );
   lakeParkBase.position.set(0, 0.04, 75);
   lakeParkBase.receiveShadow = true;
 
@@ -181,7 +182,7 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   eastFountain.add(centerJet);
   root.add(eastFountain);
 
-  // Wooden Waterfront Deck on East Lake North Shore (facing Lotte World Tower)
+  // Wooden Waterfront Deck on East Lake North Shore with Promenade Railings
   const eastDeck = new THREE.Mesh(
     new THREE.BoxGeometry(36, 0.45, 10),
     materials.woodDeck
@@ -189,6 +190,21 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   eastDeck.position.set(54, 0.68, 22);
   eastDeck.receiveShadow = true;
   root.add(eastDeck);
+
+  const deckRail = new THREE.Mesh(
+    new THREE.BoxGeometry(36, 0.08, 0.12),
+    materials.modernMullion
+  );
+  deckRail.position.set(54, 1.55, 26.8);
+  root.add(deckRail);
+  for (let bx = 37; bx <= 71; bx += 3.4) {
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.07, 0.72, 6),
+      materials.modernMullion
+    );
+    post.position.set(bx, 1.2, 26.8);
+    root.add(post);
+  }
 
   // ========================================================
   // 4. Magic Island & Magic Castle inside West Lake (매직아일랜드 & 매직캐슬)
@@ -215,7 +231,7 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   islandPlaza.receiveShadow = true;
   magicIsland.add(islandPlaza);
 
-  // Pedestrian Bridge connecting Lotte World (North shore) to Magic Island
+  // Pedestrian Bridge connecting Lotte World (North shore) to Magic Island with stone piers & rails
   const magicBridge = new THREE.Mesh(
     new THREE.BoxGeometry(6.5, 0.7, 26),
     materials.granite
@@ -225,7 +241,18 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   magicBridge.receiveShadow = true;
   magicIsland.add(magicBridge);
 
-  // Magic Castle (매직캐슬 - 8+ part composite European fairy-tale castle)
+  [-19, -27].forEach((pz) => {
+    const pier = new THREE.Mesh(new THREE.BoxGeometry(5.8, 1.4, 1.4), materials.granitePlinth);
+    pier.position.set(0, 0.55, pz);
+    magicIsland.add(pier);
+  });
+  [-3.1, 3.1].forEach((rx) => {
+    const bRail = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.75, 25.5), materials.granitePlinth);
+    bRail.position.set(rx, 2.0, -24);
+    magicIsland.add(bRail);
+  });
+
+  // Magic Castle (매직캐슬 - composite European fairy-tale castle with battlements & windows)
   const castleGroup = new THREE.Group();
   castleGroup.position.set(0, 1.55, 0);
 
@@ -238,6 +265,22 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   castleKeep.castShadow = true;
   castleKeep.receiveShadow = true;
   castleGroup.add(castleKeep);
+
+  // Battlement merlons crowning the keep parapet
+  for (let mx = -5.5; mx <= 5.5; mx += 2.2) {
+    [-5.3, 5.3].forEach((mz) => {
+      const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.9, 0.6), materials.magicCastleWall);
+      merlon.position.set(mx, 8.95, mz);
+      castleGroup.add(merlon);
+    });
+  }
+
+  // Arched castle facade windows
+  [-3.6, 3.6].forEach((wx) => {
+    const win = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 0.25), materials.modernGlass);
+    win.position.set(wx, 5.6, 5.55);
+    castleGroup.add(win);
+  });
 
   // Castle Upper Central Tower
   const castleUpperTower = new THREE.Mesh(
@@ -572,7 +615,7 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   // Connecting Skybridge & Rooftop Terrace Garden
   const mallRoofGarden = new THREE.Mesh(
     new THREE.BoxGeometry(42, 0.4, 24),
-    parkMat
+    materials.namhaeLawn
   );
   mallRoofGarden.position.set(88, 16.2, -29);
 
@@ -650,36 +693,33 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   addLakeTreeRing(-68, 65, 58, 48, 36);
   addLakeTreeRing(68, 65, 58, 48, 36);
 
-  const trunkGeo = new THREE.CylinderGeometry(0.22, 0.38, 2.8, 6);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4b382a, roughness: 0.9 });
-  const canopyGeo = new THREE.DodecahedronGeometry(2.3, 1);
+  const trunkGeo = createCherryBlossomTrunkGeometry();
+  const canopyGeo = createCherryBlossomCrownGeometry();
 
-  const trunkInst = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCoords.length);
+  const trunkInst = new THREE.InstancedMesh(trunkGeo, materials.treeBark, treeCoords.length);
   const blossomInst = new THREE.InstancedMesh(
     canopyGeo,
-    materials.cherryBlossomPink,
+    materials.blossomCanopy,
     treeCoords.length
   );
+  trunkInst.castShadow = true;
   blossomInst.castShadow = true;
+  blossomInst.receiveShadow = true;
 
   const dummy = new THREE.Object3D();
   const tintColor = new THREE.Color();
 
   treeCoords.forEach(([tx, tz], idx) => {
-    const scaleVar = 0.85 + ((idx * 17) % 10) * 0.03;
-    dummy.position.set(tx, 1.4, tz);
+    const scaleVar = 0.88 + ((idx * 17) % 10) * 0.032;
+    dummy.position.set(tx, 0, tz);
     dummy.scale.set(scaleVar, scaleVar, scaleVar);
-    dummy.rotation.y = idx * 0.7;
+    dummy.rotation.set(0, idx * 1.15, 0);
     dummy.updateMatrix();
     trunkInst.setMatrixAt(idx, dummy.matrix);
-
-    dummy.position.set(tx, 3.6 * scaleVar, tz);
-    dummy.scale.set(scaleVar * 1.15, scaleVar * 0.9, scaleVar * 1.15);
-    dummy.updateMatrix();
     blossomInst.setMatrixAt(idx, dummy.matrix);
 
-    // Subtle alternation between soft sakura pink and pale spring cream-pink
-    tintColor.setHex(idx % 3 === 0 ? 0xffd1dc : idx % 3 === 1 ? 0xf7a8c4 : 0xffe0ea);
+    // Subtle alternation between soft sakura pink, rose blush, and cream-white blossom
+    tintColor.setHex(idx % 3 === 0 ? 0xffe0ea : idx % 3 === 1 ? 0xf7b2c9 : 0xffedf3);
     blossomInst.setColorAt(idx, tintColor);
   });
 
@@ -735,6 +775,7 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
     { x: 75, z: -4.2, rotY: -Math.PI * 0.5, color: 0xe2e8f0 },
   ];
 
+  const carWheelMat = new THREE.MeshStandardMaterial({ color: 0x16191f, roughness: 0.85 });
   vehicleSpecs.forEach((v) => {
     const car = new THREE.Group();
     const bodyMat = new THREE.MeshStandardMaterial({
@@ -755,6 +796,19 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
       materials.modernGlass
     );
     cabin.position.y = h + 0.35;
+
+    const wheelR = v.isBus ? 0.42 : 0.32;
+    [-w * 0.46, w * 0.46].forEach((wx) => {
+      [-l * 0.32, l * 0.32].forEach((wz) => {
+        const wheel = new THREE.Mesh(
+          new THREE.CylinderGeometry(wheelR, wheelR, 0.24, 10),
+          carWheelMat
+        );
+        wheel.rotation.z = Math.PI * 0.5;
+        wheel.position.set(wx, wheelR, wz);
+        car.add(wheel);
+      });
+    });
 
     car.add(body, cabin);
     car.position.set(v.x, 0.14, v.z);

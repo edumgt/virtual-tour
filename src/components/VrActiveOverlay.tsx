@@ -133,7 +133,7 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
               {lang === 'ko' ? '잠실역 사거리' : 'Jamsil Crossroad'}
             </button>
           </>
-        ) : (
+        ) : activeZone === 'namsan_han' ? (
           <>
             <button
               onClick={() => onTeleport([-3.4, 7.2, 108], [0, 32, -98])}
@@ -161,6 +161,36 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
               className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
             >
               {lang === 'ko' ? '남산 정상 광장' : 'Namsan Summit'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onTeleport([-44, 2, 64], [0, 14, -20])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '물건항 방파제' : 'Mulgeon Breakwater'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([0, 1, 24], [0, 18, -32])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '방조어부림 산책로' : 'Windbreak Forest'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-20, 13, -18], [10, 10, 40])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '독일로 언덕길' : 'German-ro Promenade'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([0, 21, -35], [0, 8, 60])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '파독전시관 전망대' : 'Deutscher Platz Outlook'}
             </button>
           </>
         )}

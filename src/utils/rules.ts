@@ -152,6 +152,13 @@ export function getZoneOverviewCamera(zone: SceneZone): {
       defaultLandmarkId: 'hangang_bridge_crossing',
     };
   }
+  if (zone === 'namhae_german') {
+    return {
+      position: [36, 46, 138],
+      target: [-8, 12, -6],
+      defaultLandmarkId: 'namhae_village_overview',
+    };
+  }
   return {
     position: [0, 12, 48],
     target: [0, 5, 0],

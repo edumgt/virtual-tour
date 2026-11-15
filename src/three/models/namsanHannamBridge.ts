@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { PalaceMaterials } from '../materials';
+import {
+  createRealisticBroadleafTrunkGeometry,
+  createRealisticBroadleafCrownGeometry,
+  createKoreanPineTrunkGeometry,
+  createKoreanPineCrownGeometry,
+} from './realisticTrees';
 
 /**
  * Evaluates approximate elevation on the Mt. Namsan foothills & summit slope
@@ -29,19 +35,6 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
   const root = new THREE.Group();
   root.name = 'namsan_hannam_bridge_root';
 
-  const parkLawnMat = new THREE.MeshStandardMaterial({
-    color: 0x3b6340,
-    roughness: 0.92,
-    metalness: 0.0,
-  });
-
-  const namsanSlopeMat = new THREE.MeshStandardMaterial({
-    color: 0x2f5336,
-    roughness: 0.94,
-    metalness: 0.02,
-    flatShading: true,
-  });
-
   const darkZincMat = new THREE.MeshStandardMaterial({
     color: 0x272d38,
     roughness: 0.42,
@@ -59,18 +52,21 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
   riverBed.position.set(0, 0.04, 62);
   root.add(riverBed);
 
-  // Shimmering Han River water surface
+  // Shimmering subdivided Han River water surface for live current & ripple displacement
   const riverWater = new THREE.Mesh(
-    new THREE.PlaneGeometry(380, 108, 1, 1),
+    new THREE.PlaneGeometry(380, 108, 60, 22),
     materials.hanRiverWater
   );
   riverWater.rotation.x = -Math.PI * 0.5;
-  riverWater.position.set(0, 0.24, 62);
+  riverWater.position.set(0, 0.36, 62);
   riverWater.receiveShadow = true;
   root.add(riverWater);
 
   // South Hangang Parkland (Z = 116..186) & North Bank Ichon/Hannam Apron (Z = -18..8)
-  const southBankLawn = new THREE.Mesh(new THREE.BoxGeometry(380, 0.14, 70), parkLawnMat);
+  const southBankLawn = new THREE.Mesh(
+    new THREE.BoxGeometry(380, 0.14, 70),
+    materials.namhaeLawn
+  );
   southBankLawn.position.set(0, 0.07, 151);
   southBankLawn.receiveShadow = true;
 
@@ -179,20 +175,32 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
   northRampRoad.rotation.x = -rampSlopeAngle;
   bridgeGroup.add(northRampRoad);
 
-  // River Piers anchored in Han Riverbed (Z = 14, 38, 62, 86, 110)
+  // River Piers anchored in Han Riverbed (Z = 14, 38, 62, 86, 110) with Granite Cutwaters
   const pierZCoords = [14, 38, 62, 86, 110];
   pierZCoords.forEach((pz) => {
     [-6.5, 6.5].forEach((px) => {
       const pier = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 2.2, 5.7, 10),
+        new THREE.CylinderGeometry(1.5, 2.2, 5.7, 12),
         materials.granitePlinth
       );
       pier.position.set(px, 2.85, pz);
       pier.castShadow = true;
       pier.receiveShadow = true;
       bridgeGroup.add(pier);
+
+      // Hydrodynamic granite V-cutwater prows facing upstream/downstream river current
+      const cutwater = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.3, 2.4, 2.6, 4),
+        materials.coastalRock
+      );
+      cutwater.rotation.y = Math.PI * 0.25;
+      cutwater.scale.set(1.65, 1, 0.92);
+      cutwater.position.set(px, 1.3, pz);
+      cutwater.castShadow = true;
+      cutwater.receiveShadow = true;
+      bridgeGroup.add(cutwater);
     });
-    // Cross pier cap beam
+    // Cross pier cap beam & abutment corbel
     const cap = new THREE.Mesh(new THREE.BoxGeometry(18.5, 0.9, 3.2), materials.modernConcrete);
     cap.position.set(0, 5.1, pz);
     bridgeGroup.add(cap);
@@ -214,11 +222,14 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
       archMesh.castShadow = true;
       bridgeGroup.add(archMesh);
 
-      // Vertical steel suspender cables from arch down to deck
-      const cableCount = 7;
+      // Secondary lower tie chord & vertical/diagonal suspender truss web
+      const cableCount = 8;
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= cableCount; i++) {
+        pts.push(curve.getPoint(i / cableCount));
+      }
       for (let i = 1; i < cableCount; i++) {
-        const t = i / cableCount;
-        const pt = curve.getPoint(t);
+        const pt = pts[i];
         const cableLen = Math.max(0.5, pt.y - 6.2);
         const cable = new THREE.Mesh(
           new THREE.CylinderGeometry(0.11, 0.11, cableLen, 6),
@@ -226,15 +237,33 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
         );
         cable.position.set(pt.x, 6.2 + cableLen * 0.5, pt.z);
         bridgeGroup.add(cable);
+
+        // Diagonal steel truss brace connecting deck node to adjacent arch node
+        const prevPt = pts[i - 1];
+        const deckNode = new THREE.Vector3(pt.x, 6.2, pt.z);
+        const diagVec = new THREE.Vector3().subVectors(prevPt, deckNode);
+        const diagLen = diagVec.length();
+        if (diagLen > 1.2) {
+          const diag = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.08, 0.08, diagLen, 5),
+            materials.bridgeSteel
+          );
+          diag.position.addVectors(deckNode, prevPt).multiplyScalar(0.5);
+          diag.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            diagVec.clone().normalize()
+          );
+          bridgeGroup.add(diag);
+        }
       }
     });
 
-    // Overhead lateral bracing struts connecting West & East arch ribs
-    [0.32, 0.5, 0.68].forEach((t) => {
+    // Overhead K-brace lateral struts connecting West & East arch ribs
+    [0.24, 0.37, 0.5, 0.63, 0.76].forEach((t) => {
       const yPos = 6.2 + 4 * t * (1 - t) * (archPeakY * 0.86 - 6.2);
       const zPos = zStart + (zEnd - zStart) * t;
       const strut = new THREE.Mesh(
-        new THREE.BoxGeometry(19.6, 0.55, 0.75),
+        new THREE.BoxGeometry(19.6, 0.5, 0.65),
         materials.bridgeSteel
       );
       strut.position.set(0, yPos, zPos);
@@ -294,6 +323,7 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
     { x: 5.5, z: 68, rotY: Math.PI, color: 0xe2e8f0 },
   ];
 
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x16191f, roughness: 0.85 });
   bridgeTraffic.forEach((v) => {
     const car = new THREE.Group();
     const w = v.isBus ? 2.4 : 1.85;
@@ -304,20 +334,34 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
       new THREE.BoxGeometry(w, h, l),
       new THREE.MeshStandardMaterial({ color: v.color, roughness: 0.34, metalness: 0.45 })
     );
-    body.position.y = h * 0.5 + 0.25;
+    body.position.y = h * 0.5 + 0.34;
     body.castShadow = true;
 
     const cabin = new THREE.Mesh(
       new THREE.BoxGeometry(w * 0.88, h * 0.5, l * 0.6),
       materials.modernGlass
     );
-    cabin.position.y = h + 0.25;
+    cabin.position.y = h + 0.32;
 
     const headlightBar = new THREE.Mesh(
       new THREE.BoxGeometry(w * 0.8, 0.2, 0.1),
       materials.lanternGlow
     );
-    headlightBar.position.set(0, 0.65, -l * 0.5 - 0.04);
+    headlightBar.position.set(0, 0.72, -l * 0.5 - 0.04);
+
+    // 4 rubber tires seated cleanly on roadway
+    const wheelR = v.isBus ? 0.42 : 0.32;
+    [-w * 0.46, w * 0.46].forEach((wx) => {
+      [-l * 0.32, l * 0.32].forEach((wz) => {
+        const wheel = new THREE.Mesh(
+          new THREE.CylinderGeometry(wheelR, wheelR, 0.24, 10),
+          wheelMat
+        );
+        wheel.rotation.z = Math.PI * 0.5;
+        wheel.position.set(wx, wheelR, wz);
+        car.add(wheel);
+      });
+    });
 
     car.add(body, cabin, headlightBar);
     car.position.set(v.x, 6.33, v.z);
@@ -382,9 +426,9 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
   });
   root.add(sevitGroup);
 
-  // Han River Cruise Ferry (한강 유람선) gliding East-West
+  // Han River Cruise Ferry (한강 유람선) gliding East-West with upper railings & funnel
   const ferryGroup = new THREE.Group();
-  ferryGroup.position.set(-56, 0.3, 56);
+  ferryGroup.position.set(-56, 0.38, 56);
   const hull = new THREE.Mesh(new THREE.BoxGeometry(20, 2.0, 6.2), materials.modernConcrete);
   hull.position.y = 1.0;
   const bow = new THREE.Mesh(new THREE.ConeGeometry(3.2, 5.5, 4), materials.modernConcrete);
@@ -393,15 +437,19 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
   bow.position.set(12.2, 1.1, 0);
   const cabinDeck = new THREE.Mesh(new THREE.BoxGeometry(15, 2.2, 5.2), materials.modernGlass);
   cabinDeck.position.set(-0.5, 3.1, 0);
+  const sunDeck = new THREE.Mesh(new THREE.BoxGeometry(15.6, 0.25, 5.6), materials.woodDeck);
+  sunDeck.position.set(-0.5, 4.28, 0);
   const bridgeHouse = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.5, 3.8), materials.modernConcrete);
-  bridgeHouse.position.set(4.5, 4.95, 0);
+  bridgeHouse.position.set(4.5, 5.05, 0);
+  const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.65, 1.6, 8), materials.namsanSpireRed);
+  funnel.position.set(-4.8, 5.1, 0);
   const ferryWake = new THREE.Mesh(
     new THREE.PlaneGeometry(16, 5.6),
     new THREE.MeshBasicMaterial({ color: 0xe0f7ff, transparent: true, opacity: 0.45 })
   );
   ferryWake.rotation.x = -Math.PI * 0.5;
   ferryWake.position.set(-16, 0.05, 0);
-  ferryGroup.add(hull, bow, cabinDeck, bridgeHouse, ferryWake);
+  ferryGroup.add(hull, bow, cabinDeck, sunDeck, bridgeHouse, funnel, ferryWake);
   root.add(ferryGroup);
 
   // ========================================================
@@ -422,7 +470,10 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
     wall.position.set(0, t.height * 0.5, t.z);
     wall.receiveShadow = true;
 
-    const topLawn = new THREE.Mesh(new THREE.BoxGeometry(290, 0.16, t.depth), parkLawnMat);
+    const topLawn = new THREE.Mesh(
+      new THREE.BoxGeometry(290, 0.16, t.depth),
+      materials.namhaeLawn
+    );
     topLawn.position.set(0, t.height + 0.08, t.z);
     topLawn.receiveShadow = true;
     hannamGroup.add(wall, topLawn);
@@ -537,7 +588,7 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
     hannamGroup.add(buildHannamResidence(x, y, z, w, h, d, idx + 1));
   });
 
-  // Hannam-dong Terrace Street Trees lining each stepped granite retaining edge
+  // Hannam-dong Terrace Street Trees lining each stepped granite retaining edge (Realistic Broadleaf)
   const streetTreePositions: [number, number, number][] = [];
   const treeLanes = [
     { z: -16.2, y: 3.16 },
@@ -550,26 +601,23 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
       streetTreePositions.push([tx, lane.y, lane.z]);
     }
   });
-  const hTrunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 1.8, 6);
-  const hTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4b3526, roughness: 0.9 });
-  const hCrownGeo = new THREE.DodecahedronGeometry(1.45, 0);
-  const hTrunks = new THREE.InstancedMesh(hTrunkGeo, hTrunkMat, streetTreePositions.length);
-  const hCrowns = new THREE.InstancedMesh(hCrownGeo, materials.pineNeedles, streetTreePositions.length);
+  const hTrunkGeo = createRealisticBroadleafTrunkGeometry();
+  const hCrownGeo = createRealisticBroadleafCrownGeometry();
+  const hTrunks = new THREE.InstancedMesh(hTrunkGeo, materials.treeBark, streetTreePositions.length);
+  const hCrowns = new THREE.InstancedMesh(hCrownGeo, materials.leafCanopy, streetTreePositions.length);
+  hTrunks.castShadow = true;
   hCrowns.castShadow = true;
+  hCrowns.receiveShadow = true;
   const hTreeColor = new THREE.Color();
   streetTreePositions.forEach(([tx, ty, tz], idx) => {
-    const s = 0.85 + (idx % 4) * 0.1;
-    dummy.position.set(tx, ty + 0.9 * s, tz);
+    const s = 0.85 + (idx % 4) * 0.11;
+    dummy.position.set(tx, ty - 0.05, tz);
     dummy.scale.set(s, s, s);
-    dummy.rotation.set(0, idx * 0.7, 0);
+    dummy.rotation.set(0, idx * 1.17, 0);
     dummy.updateMatrix();
     hTrunks.setMatrixAt(idx, dummy.matrix);
-
-    dummy.position.set(tx, ty + 2.4 * s, tz);
-    dummy.scale.set(s * 1.1, s * 0.95, s * 1.1);
-    dummy.updateMatrix();
     hCrowns.setMatrixAt(idx, dummy.matrix);
-    hTreeColor.setHex(idx % 5 === 0 ? 0xd98a9c : idx % 2 === 0 ? 0x2e6638 : 0x3b7242);
+    hTreeColor.setHex(idx % 5 === 0 ? 0xe59fb2 : idx % 2 === 0 ? 0x3b7644 : 0x4b874d);
     hCrowns.setColorAt(idx, hTreeColor);
   });
   hTrunks.instanceMatrix.needsUpdate = true;
@@ -616,63 +664,82 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
     const vx = posAttr.getX(i);
     const vz = posAttr.getZ(i);
     const baseH = getNamsanHeight(vx, vz);
-    // Subtle granite outcrop ridging for crisp low-poly shading
     const ridgeNoise = baseH > 2 ? Math.sin(vx * 0.14) * Math.cos(vz * 0.16) * 1.8 : 0;
     posAttr.setY(i, Math.max(0, baseH + ridgeNoise));
   }
   mountainGeo.computeVertexNormals();
 
-  const namsanTerrain = new THREE.Mesh(mountainGeo, namsanSlopeMat);
+  const namsanTerrain = new THREE.Mesh(mountainGeo, materials.namhaeLawn);
   namsanTerrain.receiveShadow = true;
   namsanTerrain.castShadow = true;
   namsanGroup.add(namsanTerrain);
 
-  // Dense Mt. Namsan Pine & Broadleaf Canopy (InstancedMesh seated flush on getNamsanHeight)
-  const treePositions: [number, number, number][] = [];
-  for (let i = 0; i < 155; i++) {
-    // Deterministic golden-angle distribution over Mt. Namsan slopes
+  // Natural granite ridge outcrops on Mt. Namsan shoulders
+  const cragGeo = new THREE.IcosahedronGeometry(3.4, 1);
+  const cragCoords: [number, number, number][] = [
+    [-36, -92, 1.5],
+    [34, -95, 1.4],
+    [-68, -104, 1.6],
+    [66, -102, 1.5],
+    [18, -82, 1.2],
+    [-22, -78, 1.2],
+  ];
+  cragCoords.forEach(([cx, cz, sc], idx) => {
+    const cy = getNamsanHeight(cx, cz);
+    const crag = new THREE.Mesh(cragGeo, materials.coastalRock);
+    crag.position.set(cx, cy - 0.6, cz);
+    crag.scale.set(sc * 1.6, sc * 0.85, sc * 1.3);
+    crag.rotation.set(0.2 * idx, idx * 0.9, 0.15);
+    crag.castShadow = true;
+    crag.receiveShadow = true;
+    namsanGroup.add(crag);
+  });
+
+  // Dense Mt. Namsan Realistic Korean Pine & Broadleaf Canopy (InstancedMesh seated flush on getNamsanHeight)
+  const pinePositions: [number, number, number][] = [];
+  const broadleafPositions: [number, number, number][] = [];
+  for (let i = 0; i < 185; i++) {
     const angle = i * 2.39996;
-    const radX = 16 + ((i * 37) % 135);
-    const radZ = 8 + ((i * 23) % 44);
+    const radX = 16 + ((i * 37) % 140);
+    const radZ = 8 + ((i * 23) % 46);
     const tx = Math.cos(angle) * radX;
     const tz = -102 + Math.sin(angle) * radZ;
     if (tz > -56 || tz < -165) continue;
-    // Keep summit plaza & cable car line clear
     if (Math.hypot(tx, tz + 102) < 20) continue;
     const ty = getNamsanHeight(tx, tz);
     if (ty < 3) continue;
-    treePositions.push([tx, ty, tz]);
+    if (i % 3 === 0) {
+      broadleafPositions.push([tx, ty, tz]);
+    } else {
+      pinePositions.push([tx, ty, tz]);
+    }
   }
 
-  const pineTrunkGeo = new THREE.CylinderGeometry(0.24, 0.4, 2.2, 6);
-  const pineTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4b3526, roughness: 0.92 });
-  const pineCrownGeo = new THREE.ConeGeometry(2.1, 4.8, 7);
+  const pineTrunkGeo = createKoreanPineTrunkGeometry();
+  const pineCrownGeo = createKoreanPineCrownGeometry();
 
-  const pineTrunks = new THREE.InstancedMesh(pineTrunkGeo, pineTrunkMat, treePositions.length);
+  const pineTrunks = new THREE.InstancedMesh(pineTrunkGeo, materials.treeBark, pinePositions.length);
   const pineCrowns = new THREE.InstancedMesh(
     pineCrownGeo,
-    materials.pineNeedles,
-    treePositions.length
+    materials.leafCanopy,
+    pinePositions.length
   );
+  pineTrunks.castShadow = true;
   pineCrowns.castShadow = true;
+  pineCrowns.receiveShadow = true;
 
   const treeColor = new THREE.Color();
-  treePositions.forEach(([tx, ty, tz], idx) => {
-    const s = 0.85 + ((idx * 13) % 10) * 0.04;
-    dummy.position.set(tx, ty + 0.9 * s, tz);
+  const pinePalette = [0x2a5a34, 0x32663c, 0x244e2d, 0x3b6f40];
+  pinePositions.forEach(([tx, ty, tz], idx) => {
+    const s = 0.85 + ((idx * 13) % 10) * 0.045;
+    dummy.position.set(tx, ty - 0.25, tz);
     dummy.scale.set(s, s, s);
-    dummy.rotation.set(0, idx * 0.8, 0);
+    dummy.rotation.set(0, idx * 1.35, 0);
     dummy.updateMatrix();
     pineTrunks.setMatrixAt(idx, dummy.matrix);
-
-    dummy.position.set(tx, ty + 3.4 * s, tz);
-    dummy.scale.set(s * 1.05, s, s * 1.05);
-    dummy.updateMatrix();
     pineCrowns.setMatrixAt(idx, dummy.matrix);
 
-    // Subtle forest tint variation (deep evergreen, cedar olive, warm autumn accent)
-    const palette = [0x1c4a2b, 0x265934, 0x2f6438, 0x3f6b32];
-    treeColor.setHex(palette[idx % palette.length]);
+    treeColor.setHex(pinePalette[idx % pinePalette.length]);
     pineCrowns.setColorAt(idx, treeColor);
   });
   pineTrunks.instanceMatrix.needsUpdate = true;
@@ -682,18 +749,59 @@ export function buildNamsanHannamBridge(materials: PalaceMaterials): THREE.Group
   pineCrowns.computeBoundingSphere();
   namsanGroup.add(pineTrunks, pineCrowns);
 
-  // Seoul City Wall (한양도성 남산 성곽길) climbing up the southwest slope
+  const nLeafTrunks = new THREE.InstancedMesh(hTrunkGeo, materials.treeBark, broadleafPositions.length);
+  const nLeafCrowns = new THREE.InstancedMesh(hCrownGeo, materials.leafCanopy, broadleafPositions.length);
+  nLeafTrunks.castShadow = true;
+  nLeafCrowns.castShadow = true;
+  nLeafCrowns.receiveShadow = true;
+  const leafPalette = [0x457b3d, 0x548b45, 0x3a6c39, 0x708b3b];
+  broadleafPositions.forEach(([tx, ty, tz], idx) => {
+    const s = 0.85 + ((idx * 17) % 10) * 0.04;
+    dummy.position.set(tx, ty - 0.2, tz);
+    dummy.scale.set(s, s, s);
+    dummy.rotation.set(0, idx * 1.75, 0);
+    dummy.updateMatrix();
+    nLeafTrunks.setMatrixAt(idx, dummy.matrix);
+    nLeafCrowns.setMatrixAt(idx, dummy.matrix);
+    treeColor.setHex(leafPalette[idx % leafPalette.length]);
+    nLeafCrowns.setColorAt(idx, treeColor);
+  });
+  nLeafTrunks.instanceMatrix.needsUpdate = true;
+  nLeafCrowns.instanceMatrix.needsUpdate = true;
+  if (nLeafCrowns.instanceColor) nLeafCrowns.instanceColor.needsUpdate = true;
+  nLeafTrunks.computeBoundingSphere();
+  nLeafCrowns.computeBoundingSphere();
+  namsanGroup.add(nLeafTrunks, nLeafCrowns);
+
+  // Seoul City Wall (한양도성 남산 성곽길) climbing up the southwest slope with crenellated 여장 merlons
   const wallWaypoints = 9;
   for (let i = 0; i < wallWaypoints; i++) {
     const t = i / (wallWaypoints - 1);
     const wx = -64 + t * 45;
     const wz = -66 - t * 30;
     const wy = getNamsanHeight(wx, wz);
-    const seg = new THREE.Mesh(new THREE.BoxGeometry(6.2, 3.6, 1.4), materials.granite);
-    seg.position.set(wx, wy + 1.5, wz);
-    seg.rotation.y = Math.atan2(30, 45);
+    const segGroup = new THREE.Group();
+    segGroup.position.set(wx, wy, wz);
+    segGroup.rotation.y = Math.atan2(30, 45);
+
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(6.4, 3.6, 1.4), materials.granite);
+    seg.position.y = 1.5;
     seg.castShadow = true;
-    namsanGroup.add(seg);
+    seg.receiveShadow = true;
+    segGroup.add(seg);
+
+    // Stone coping ledge + 3 crenellated merlons (여장) atop each wall section
+    const coping = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.25, 1.6), materials.granitePlinth);
+    coping.position.y = 3.4;
+    segGroup.add(coping);
+
+    [-2.0, 0, 2.0].forEach((mx) => {
+      const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.95, 0.75), materials.granite);
+      merlon.position.set(mx, 3.95, 0);
+      merlon.castShadow = true;
+      segGroup.add(merlon);
+    });
+    namsanGroup.add(segGroup);
   }
 
   // Namsan Cable Car (남산 케이블카 - twin cables + 2 crimson gondolas)
