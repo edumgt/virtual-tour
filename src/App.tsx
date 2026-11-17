@@ -5,8 +5,9 @@ import { LeftNavigationBar } from './components/LeftNavigationBar';
 import { HeritageModal } from './components/HeritageModal';
 import { VrModeModal } from './components/VrModeModal';
 import { VrActiveOverlay } from './components/VrActiveOverlay';
+import { ZoneMinimapOverlay } from './components/ZoneMinimapOverlay';
 import { LANDMARKS } from './data/landmarks';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrState, SceneZone } from './types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrState, SceneZone, CameraTelemetry } from './types';
 import { filterLandmarksByZone, getZoneOverviewCamera } from './utils/rules';
 import { soundController } from './audio/traditionalAudio';
 
@@ -29,6 +30,10 @@ export default function App() {
   const [isBridgeDriving, setIsBridgeDriving] = useState<boolean>(false);
   const [isLnbExpanded, setIsLnbExpanded] = useState<boolean>(true);
   const [isMobileLnbOpen, setIsMobileLnbOpen] = useState<boolean>(false);
+  const [cameraTelemetry, setCameraTelemetry] = useState<CameraTelemetry>(() => {
+    const initial = getZoneOverviewCamera('gwanghwamun');
+    return { position: initial.position, target: initial.target };
+  });
 
   // Check WebXR device capability on mount
   useEffect(() => {
@@ -62,6 +67,9 @@ export default function App() {
       onBridgeDriveStateChange: (driving: boolean) => {
         setIsBridgeDriving(driving);
       },
+      onCameraMove: (telemetry: CameraTelemetry) => {
+        setCameraTelemetry(telemetry);
+      },
     });
 
     sceneManagerRef.current = manager;
@@ -86,6 +94,7 @@ export default function App() {
 
     const overview = getZoneOverviewCamera(zone);
     setSelectedLandmarkId(overview.defaultLandmarkId);
+    setCameraTelemetry({ position: overview.position, target: overview.target });
 
     if (sceneManagerRef.current) {
       sceneManagerRef.current.setZone(zone);
@@ -137,6 +146,16 @@ export default function App() {
     setSelectedLandmarkId(landmark.id);
     if (sceneManagerRef.current) {
       sceneManagerRef.current.flyTo(landmark.cameraPosition, landmark.cameraTarget);
+    }
+  };
+
+  const handleMinimapPan = (
+    position: [number, number, number],
+    target: [number, number, number]
+  ) => {
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.flyTo(position, target);
+      soundController.playBell(780);
     }
   };
 
@@ -279,12 +298,12 @@ export default function App() {
 
         {/* Brief Interaction Hint */}
         {showQuickGuide && !vrState.isPresenting && (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[90%] max-w-md">
+          <div className="absolute top-[72px] left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[90%] max-w-md hidden sm:block">
             <div className="bg-stone-900/90 text-amber-200 text-xs px-4 py-2 rounded-full border border-amber-600/40 shadow-xl flex items-center justify-between gap-2">
               <span className="truncate">
                 {lang === 'ko'
-                  ? '좌측 메뉴에서 구역·명소·날씨를 선택하세요 · 드래그 회전 · 휠 줌'
-                  : 'Select districts, landmarks & weather from the left menu · Drag to rotate'}
+                  ? '좌측 메뉴·우측 하단 2D 지도에서 구역·명소를 선택하세요 · 드래그 회전'
+                  : 'Use left menu or 2D minimap to explore districts & landmarks · Drag to orbit'}
               </span>
               <button
                 onClick={() => setShowQuickGuide(false)}
@@ -295,6 +314,23 @@ export default function App() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* 2D Current Zone Minimap & Live Camera Position Overlay */}
+        {!vrState.isPresenting && (
+          <ZoneMinimapOverlay
+            activeZone={activeZone}
+            landmarks={zoneLandmarks}
+            selectedLandmarkId={selectedLandmarkId}
+            cameraTelemetry={cameraTelemetry}
+            onSelectLandmark={(id) => {
+              handleSelectLandmark(id);
+              soundController.playBell(820);
+            }}
+            onPanToWorld={handleMinimapPan}
+            onResetOverview={handleResetOverview}
+            lang={lang}
+          />
         )}
       </div>
 

@@ -42,3 +42,8 @@ export interface CameraPreset {
   target: [number, number, number];
   fov?: number;
 }
+
+export interface CameraTelemetry {
+  position: [number, number, number];
+  target: [number, number, number];
+}

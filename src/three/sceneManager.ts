@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { StereoEffect } from 'three/examples/jsm/effects/StereoEffect.js';
-import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState, SceneZone } from '../types';
+import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState, SceneZone, CameraTelemetry } from '../types';
 import { getLightingPreset, dampVector3, getZoneOverviewCamera, evaluateBridgeCrossingPose } from '../utils/rules';
 import { initPalaceMaterials, PalaceMaterials } from './materials';
 import { createSnowParticleTexture, createRainParticleTexture } from './textures';
@@ -22,6 +22,7 @@ export interface SceneManagerOptions {
   onLandmarkSelect: (landmarkId: string) => void;
   onVrStateChange?: (state: VrState) => void;
   onBridgeDriveStateChange?: (isDriving: boolean) => void;
+  onCameraMove?: (telemetry: CameraTelemetry) => void;
 }
 
 export class SceneManager {
@@ -83,6 +84,10 @@ export class SceneManager {
   private isBridgeDriving = false;
   private bridgeDriveProgress = 0;
   private onBridgeDriveStateChange?: (isDriving: boolean) => void;
+  private onCameraMove?: (telemetry: CameraTelemetry) => void;
+  private lastTelemetryTime = 0;
+  private lastSentPos: [number, number, number] = [0, 0, 0];
+  private lastSentTarget: [number, number, number] = [0, 0, 0];
   private resizeObserver: ResizeObserver | null = null;
 
   // Landmarks & Raycasting
@@ -99,6 +104,7 @@ export class SceneManager {
     this.onLandmarkSelect = options.onLandmarkSelect;
     this.onVrStateChange = options.onVrStateChange;
     this.onBridgeDriveStateChange = options.onBridgeDriveStateChange;
+    this.onCameraMove = options.onCameraMove;
 
     // Detect software WebGL
     this.isSoftwareGl = (() => {
@@ -724,6 +730,7 @@ export class SceneManager {
     this.controls.target.set(...overview.target);
     this.controls.update();
     this.applyAtmosphere();
+    this.emitCameraTelemetry(true);
     if (!this.renderer.xr.isPresenting) {
       this.renderer.render(this.scene, this.camera);
     }
@@ -748,6 +755,7 @@ export class SceneManager {
     this.camera.position.set(...pose.position);
     this.controls.target.set(...pose.target);
     this.controls.update();
+    this.emitCameraTelemetry(true);
     this.onBridgeDriveStateChange?.(true);
   }
 
@@ -1049,12 +1057,45 @@ export class SceneManager {
       this.renderer.render(this.scene, this.camera);
     }
 
+    this.emitCameraTelemetry(false, now);
+
     if (this.isSoftwareGl) {
       this.afterDraw(this.tick);
     } else {
       this.frameId = requestAnimationFrame(this.tick);
     }
   };
+
+  private emitCameraTelemetry(force: boolean, now: number = performance.now()) {
+    if (!this.onCameraMove || this.isDestroyed) return;
+    if (!force && now - this.lastTelemetryTime < 110) return;
+
+    const px = this.camera.position.x;
+    const py = this.camera.position.y;
+    const pz = this.camera.position.z;
+    const tx = this.controls.target.x;
+    const ty = this.controls.target.y;
+    const tz = this.controls.target.z;
+
+    if (!force) {
+      const moved =
+        Math.abs(px - this.lastSentPos[0]) > 0.08 ||
+        Math.abs(py - this.lastSentPos[1]) > 0.08 ||
+        Math.abs(pz - this.lastSentPos[2]) > 0.08 ||
+        Math.abs(tx - this.lastSentTarget[0]) > 0.08 ||
+        Math.abs(ty - this.lastSentTarget[1]) > 0.08 ||
+        Math.abs(tz - this.lastSentTarget[2]) > 0.08;
+      if (!moved) return;
+    }
+
+    this.lastTelemetryTime = now;
+    this.lastSentPos = [px, py, pz];
+    this.lastSentTarget = [tx, ty, tz];
+    this.onCameraMove({
+      position: [px, py, pz],
+      target: [tx, ty, tz],
+    });
+  }
 
   private afterDraw(callback: () => void) {
     const gl = this.renderer.getContext() as WebGL2RenderingContext;
