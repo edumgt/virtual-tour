@@ -15,6 +15,7 @@ import { buildModernCityscape } from './models/modernCityscape';
 import { buildSeokchonLotte } from './models/seokchonLotte';
 import { buildNamsanHannamBridge } from './models/namsanHannamBridge';
 import { buildNamhaeGermanVillage } from './models/namhaeGermanVillage';
+import { buildJeonjuHanokVillage } from './models/jeonjuHanokVillage';
 
 export interface SceneManagerOptions {
   container: HTMLDivElement;
@@ -70,12 +71,13 @@ export class SceneManager {
   private targetLookAt: [number, number, number] | null = null;
   private isTransitioning = false;
 
-  // District Zones (광화문·경복궁 / 석촌호수·롯데타워 / 남산·한남·한강대교 / 남해·독일마을)
+  // District Zones (광화문·경복궁 / 석촌호수·롯데타워 / 남산·한남·한강대교 / 남해·독일마을 / 전주 한옥마을)
   private currentZone: SceneZone = 'gwanghwamun';
   private gwanghwamunGroup = new THREE.Group();
   private jamsilGroup = new THREE.Group();
   private namsanHanGroup = new THREE.Group();
   private namhaeGermanGroup = new THREE.Group();
+  private jeonjuHanokGroup = new THREE.Group();
 
   // Bridge Crossing Animated Drive State
   private isBridgeDriving = false;
@@ -352,6 +354,30 @@ export class SceneManager {
     this.namhaeGermanGroup.visible = this.currentZone === 'namhae_german';
     this.scene.add(this.namhaeGermanGroup);
 
+    // ========================================================
+    // Zone E: Jeonju Hanok Village (전북 전주 한옥마을 구역)
+    // ========================================================
+    this.jeonjuHanokGroup.name = 'zone_jeonju_hanok';
+    const jeonjuVillage = buildJeonjuHanokVillage(this.materials);
+    this.jeonjuHanokGroup.add(jeonjuVillage);
+
+    // Night accent lanterns (Gyeonggijeon Shrine, Taejo-ro Center, Cheongyeonru Bridge, Omokdae Pavilion)
+    const jeonjuLanternSpots = [
+      [-10, 8, -38],
+      [14, 6, 18],
+      [0, 9, 74],
+      [86, 22, 28],
+    ];
+    jeonjuLanternSpots.forEach(([lx, ly, lz]) => {
+      const pl = new THREE.PointLight(0xffb85c, 0.0, 75, 1.5);
+      pl.position.set(lx, ly, lz);
+      this.jeonjuHanokGroup.add(pl);
+      this.lanternLights.push(pl);
+    });
+
+    this.jeonjuHanokGroup.visible = this.currentZone === 'jeonju_hanok';
+    this.scene.add(this.jeonjuHanokGroup);
+
     // Interactive Floating Landmark Discovery Badges (클릭 가능한 문화유산 및 현대 랜드마크 마커)
     this.createDiscoveryMarkers();
   }
@@ -395,6 +421,12 @@ export class SceneManager {
       { id: 'mulgeon_forest', zone: 'namhae_german', pos: [0, 8, 28] },
       { id: 'mulgeon_lighthouse', zone: 'namhae_german', pos: [-48, 19, 70] },
       { id: 'german_terraced_villas', zone: 'namhae_german', pos: [-40, 13, -6] },
+      // Jeonju Hanok Village Landmarks
+      { id: 'jeonju_hanok_overview', zone: 'jeonju_hanok', pos: [14, 14, 18] },
+      { id: 'gyeonggijeon_shrine', zone: 'jeonju_hanok', pos: [-10, 15, -42] },
+      { id: 'jeondong_cathedral', zone: 'jeonju_hanok', pos: [-78, 29, 18] },
+      { id: 'omokdae_pavilion', zone: 'jeonju_hanok', pos: [86, 28, 28] },
+      { id: 'cheongyeonru_stream', zone: 'jeonju_hanok', pos: [0, 14, 74] },
     ];
 
     const beaconGeo = new THREE.SphereGeometry(0.7, 12, 10);
@@ -429,6 +461,8 @@ export class SceneManager {
           ? this.namsanHanGroup
           : item.zone === 'namhae_german'
           ? this.namhaeGermanGroup
+          : item.zone === 'jeonju_hanok'
+          ? this.jeonjuHanokGroup
           : this.gwanghwamunGroup;
       targetParent.add(markerGroup);
 
@@ -665,9 +699,15 @@ export class SceneManager {
     this.jamsilGroup.visible = zone === 'jamsil';
     this.namsanHanGroup.visible = zone === 'namsan_han';
     this.namhaeGermanGroup.visible = zone === 'namhae_german';
+    this.jeonjuHanokGroup.visible = zone === 'jeonju_hanok';
 
     if (!this.isSoftwareGl) {
-      const bound = zone === 'namsan_han' || zone === 'namhae_german' ? 140 : zone === 'jamsil' ? 130 : 60;
+      const bound =
+        zone === 'namsan_han' || zone === 'namhae_german' || zone === 'jeonju_hanok'
+          ? 140
+          : zone === 'jamsil'
+          ? 130
+          : 60;
       this.sunLight.shadow.camera.left = -bound;
       this.sunLight.shadow.camera.right = bound;
       this.sunLight.shadow.camera.top = bound;
@@ -748,6 +788,9 @@ export class SceneManager {
     this.materials.seokchonWater.wireframe = isWireframe;
     this.materials.hanRiverWater.wireframe = isWireframe;
     this.materials.namhaeSeaWater.wireframe = isWireframe;
+    this.materials.jeondongBrick.wireframe = isWireframe;
+    this.materials.hanokWall.wireframe = isWireframe;
+    this.materials.jeonjuWater.wireframe = isWireframe;
 
     if (mode === 'night_lanterns') {
       this.setTimePreset('night');

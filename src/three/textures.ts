@@ -1703,5 +1703,99 @@ export function createCoastalRockTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * Creates Romanesque red-brown masonry brick texture with pale lime mortar lines
+ * for Jeondong Cathedral (전동성당 적벽돌 외벽)
+ */
+export function createRedBrickTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
 
+  // Warm weathered lime mortar base
+  ctx.fillStyle = '#9c9286';
+  ctx.fillRect(0, 0, 256, 256);
 
+  const rows = 20;
+  const cols = 10;
+  const rowH = 256 / rows;
+  const colW = 256 / cols;
+
+  for (let r = 0; r < rows; r++) {
+    const offset = (r % 2) * (colW * 0.5);
+    for (let c = -1; c <= cols; c++) {
+      const bx = c * colW + offset + 1.0;
+      const by = r * rowH + 1.0;
+      const shade = ((r * 7 + c * 13) & 7) - 3;
+      const red = 114 + shade * 6;
+      const green = 42 + shade * 3;
+      const blue = 34 + shade * 2;
+      ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+      ctx.fillRect(bx, by, colW - 2, rowH - 2);
+
+      // Subtle kiln edge variation
+      ctx.fillStyle = 'rgba(255, 200, 170, 0.06)';
+      ctx.fillRect(bx + 1, by + 1, colW - 4, 1.5);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Creates traditional Korean Hanok wall texture (전통 한옥 화방벽 + 회벽 + 기둥 결구)
+ */
+export function createHanokWallTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  // Warm upper white/ivory lime plaster (백회벽)
+  ctx.fillStyle = '#ede6d8';
+  ctx.fillRect(0, 0, 256, 152);
+
+  // Subtle plaster grain
+  for (let i = 0; i < 240; i++) {
+    const x = (i * 47) % 256;
+    const y = (i * 31) % 150;
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(180, 168, 148, 0.14)' : 'rgba(255, 252, 244, 0.2)';
+    ctx.fillRect(x, y, 4, 3);
+  }
+
+  // Lower stone & clay tile hwabangbyeok masonry band (화방벽)
+  ctx.fillStyle = '#8b8378';
+  ctx.fillRect(0, 152, 256, 104);
+
+  const rows = 5;
+  const cols = 6;
+  const bandH = 104 / rows;
+  const colW = 256 / cols;
+  for (let r = 0; r < rows; r++) {
+    const offset = (r % 2) * (colW * 0.5);
+    for (let c = -1; c <= cols; c++) {
+      const x = c * colW + offset + 2;
+      const y = 152 + r * bandH + 2;
+      ctx.fillStyle = (r + c) % 3 === 0 ? '#6e685f' : (r + c) % 2 === 0 ? '#7d766c' : '#5f5a52';
+      ctx.fillRect(x, y, colW - 4, bandH - 4);
+    }
+  }
+
+  // Timber framing posts & horizontal lintel beam
+  ctx.fillStyle = '#4e2b18';
+  ctx.fillRect(0, 0, 12, 256);
+  ctx.fillRect(244, 0, 12, 256);
+  ctx.fillRect(0, 146, 256, 10);
+  ctx.fillRect(0, 0, 256, 10);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}

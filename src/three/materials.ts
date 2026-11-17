@@ -32,6 +32,8 @@ import {
   createLeafCanopyTexture,
   createBlossomCanopyTexture,
   createCoastalRockTexture,
+  createRedBrickTexture,
+  createHanokWallTexture,
 } from './textures';
 
 export interface PalaceMaterials {
@@ -94,6 +96,10 @@ export interface PalaceMaterials {
   namhaeStoneWall: THREE.MeshStandardMaterial;
   namhaeCobbleRoad: THREE.MeshStandardMaterial;
   namhaeLawn: THREE.MeshStandardMaterial;
+  // Jeonju Hanok Village
+  jeondongBrick: THREE.MeshStandardMaterial;
+  hanokWall: THREE.MeshStandardMaterial;
+  jeonjuWater: THREE.MeshPhysicalMaterial;
   wireframeMode: boolean;
   updateWaterTime: (timeSec: number) => void;
   dispose: () => void;
@@ -191,6 +197,12 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
 
   const coastalRockTex = applyAniso(createCoastalRockTexture());
   coastalRockTex.repeat.set(3, 3);
+
+  const jeondongBrickTex = applyAniso(createRedBrickTexture());
+  jeondongBrickTex.repeat.set(3, 3);
+
+  const hanokWallTex = applyAniso(createHanokWallTexture());
+  hanokWallTex.repeat.set(2, 1);
 
   const waterTimeUniform = { value: 0 };
 
@@ -729,6 +741,73 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     metalness: 0.0,
   });
 
+  // Jeonju Hanok Village Materials
+  const jeondongBrick = new THREE.MeshStandardMaterial({
+    map: jeondongBrickTex,
+    bumpMap: jeondongBrickTex,
+    bumpScale: 0.05,
+    color: 0xffffff,
+    roughness: 0.78,
+    metalness: 0.03,
+  });
+
+  const hanokWall = new THREE.MeshStandardMaterial({
+    map: hanokWallTex,
+    bumpMap: hanokWallTex,
+    bumpScale: 0.03,
+    color: 0xffffff,
+    roughness: 0.84,
+    metalness: 0.01,
+  });
+
+  const jeonjuWater = new THREE.MeshPhysicalMaterial({
+    color: 0x186670,
+    normalMap: pondWaterNormalTex,
+    normalScale: new THREE.Vector2(0.75, 0.75),
+    roughness: 0.07,
+    metalness: 0.22,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.06,
+    envMapIntensity: 1.75,
+    transparent: true,
+    opacity: 0.88,
+  });
+  jeonjuWater.customProgramCacheKey = () => 'jeonju_stream_water_v1';
+  jeonjuWater.onBeforeCompile = (shader) => {
+    shader.uniforms.uWaterTime = waterTimeUniform;
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        uniform float uWaterTime;
+        varying vec3 vStreamPos;`
+      )
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        float riffle = sin(transformed.x * 0.16 - uWaterTime * 2.1) * 0.045 + cos(transformed.y * 0.35 + uWaterTime * 1.4) * 0.03;
+        transformed.z += riffle;
+        vStreamPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        uniform float uWaterTime;
+        varying vec3 vStreamPos;`
+      )
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        float midStream = smoothstep(64.0, 71.0, vStreamPos.z) * smoothstep(84.0, 77.0, vStreamPos.z);
+        vec3 shallows = vec3(0.14, 0.50, 0.54);
+        vec3 channel = vec3(0.06, 0.31, 0.40);
+        diffuseColor.rgb = mix(shallows, channel, midStream);
+        float glint = sin(vStreamPos.x * 0.32 - uWaterTime * 2.4 + sin(vStreamPos.z * 0.5)) * 0.5 + 0.5;
+        diffuseColor.rgb += vec3(0.03, 0.05, 0.05) * smoothstep(0.72, 1.0, glint);`
+      );
+  };
+
   const allMaterials: THREE.Material[] = [
     giwaRoof,
     dancheong,
@@ -785,6 +864,9 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     namhaeStoneWall,
     namhaeCobbleRoad,
     namhaeLawn,
+    jeondongBrick,
+    hanokWall,
+    jeonjuWater,
   ];
 
   const allTextures: THREE.Texture[] = [
@@ -821,6 +903,8 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     leafTex,
     blossomTex,
     coastalRockTex,
+    jeondongBrickTex,
+    hanokWallTex,
   ];
 
   return {
@@ -879,6 +963,9 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     namhaeStoneWall,
     namhaeCobbleRoad,
     namhaeLawn,
+    jeondongBrick,
+    hanokWall,
+    jeonjuWater,
     wireframeMode: false,
     updateWaterTime: (timeSec: number) => {
       waterTimeUniform.value = timeSec;

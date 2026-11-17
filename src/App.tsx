@@ -91,7 +91,15 @@ export default function App() {
       sceneManagerRef.current.setZone(zone);
     }
     soundController.playGayageumNote(
-      zone === 'jamsil' ? 587 : zone === 'namsan_han' ? 659 : zone === 'namhae_german' ? 784 : 440
+      zone === 'jamsil'
+        ? 587
+        : zone === 'namsan_han'
+        ? 659
+        : zone === 'namhae_german'
+        ? 784
+        : zone === 'jeonju_hanok'
+        ? 880
+        : 440
     );
   };
 
@@ -275,7 +283,7 @@ export default function App() {
             <div className="bg-stone-900/90 text-amber-200 text-xs px-4 py-2 rounded-full border border-amber-600/40 shadow-xl flex items-center justify-between gap-2">
               <span className="truncate">
                 {lang === 'ko'
-                  ? '좌측 메뉴에서 서울 구역·명소·날씨를 선택하세요 · 드래그 회전 · 휠 줌'
+                  ? '좌측 메뉴에서 구역·명소·날씨를 선택하세요 · 드래그 회전 · 휠 줌'
                   : 'Select districts, landmarks & weather from the left menu · Drag to rotate'}
               </span>
               <button

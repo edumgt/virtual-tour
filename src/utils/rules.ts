@@ -159,6 +159,13 @@ export function getZoneOverviewCamera(zone: SceneZone): {
       defaultLandmarkId: 'namhae_village_overview',
     };
   }
+  if (zone === 'jeonju_hanok') {
+    return {
+      position: [102, 54, 140],
+      target: [6, 11, 8],
+      defaultLandmarkId: 'jeonju_hanok_overview',
+    };
+  }
   return {
     position: [0, 12, 48],
     target: [0, 5, 0],

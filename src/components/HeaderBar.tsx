@@ -28,6 +28,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const isJamsil = activeZone === 'jamsil';
   const isNamsan = activeZone === 'namsan_han';
   const isNamhae = activeZone === 'namhae_german';
+  const isJeonju = activeZone === 'jeonju_hanok';
 
   const zoneTitle = isJamsil
     ? lang === 'ko'
@@ -41,6 +42,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     ? lang === 'ko'
       ? '남해 독일마을 & 물건항'
       : 'Namhae German Village'
+    : isJeonju
+    ? lang === 'ko'
+      ? '전주 한옥마을 & 경기전'
+      : 'Jeonju Hanok Village'
     : lang === 'ko'
     ? '경복궁 & 광화문'
     : 'Gyeongbokgung & Gwanghwamun';
@@ -59,7 +64,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         </button>
 
         <div className="w-7 h-7 rounded-lg bg-amber-600/25 border border-amber-500/45 flex items-center justify-center font-serif text-amber-300 font-bold text-xs shrink-0">
-          {isJamsil ? '湖' : isNamsan ? '南' : isNamhae ? '海' : '景'}
+          {isJamsil ? '湖' : isNamsan ? '南' : isNamhae ? '海' : isJeonju ? '全' : '景'}
         </div>
 
         <div className="flex items-center gap-2 min-w-0">

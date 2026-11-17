@@ -54,7 +54,7 @@ test('clampCameraPosition constrains values within allowable bounds', () => {
   assert.equal(clampedTop[1], 230);
 });
 
-test('getZoneOverviewCamera returns distinct framing for all 4 zones', () => {
+test('getZoneOverviewCamera returns distinct framing for all 5 zones', () => {
   const gwanghwamunCam = getZoneOverviewCamera('gwanghwamun');
   assert.equal(gwanghwamunCam.defaultLandmarkId, 'gwanghwamun');
   assert.ok(gwanghwamunCam.position[1] < 30);
@@ -72,6 +72,11 @@ test('getZoneOverviewCamera returns distinct framing for all 4 zones', () => {
   assert.equal(namhaeCam.defaultLandmarkId, 'namhae_village_overview');
   assert.ok(namhaeCam.position[2] > 80);
   assert.ok(namhaeCam.target[1] > 5);
+
+  const jeonjuCam = getZoneOverviewCamera('jeonju_hanok');
+  assert.equal(jeonjuCam.defaultLandmarkId, 'jeonju_hanok_overview');
+  assert.ok(jeonjuCam.position[0] > 50);
+  assert.ok(jeonjuCam.position[2] > 80);
 });
 
 test('evaluateBridgeCrossingPose advances north across the Han River bridge', () => {
@@ -92,14 +97,16 @@ test('filterLandmarksByZone filters landmarks strictly by active zone', () => {
     { id: 'c', zone: 'jamsil' as const },
     { id: 'd', zone: 'namsan_han' as const },
     { id: 'e', zone: 'namhae_german' as const },
+    { id: 'f', zone: 'jeonju_hanok' as const },
   ];
   assert.equal(filterLandmarksByZone(sample, 'gwanghwamun').length, 1);
   assert.equal(filterLandmarksByZone(sample, 'jamsil').length, 2);
   assert.equal(filterLandmarksByZone(sample, 'namsan_han').length, 1);
   assert.equal(filterLandmarksByZone(sample, 'namhae_german').length, 1);
+  assert.equal(filterLandmarksByZone(sample, 'jeonju_hanok').length, 1);
   assert.deepEqual(
-    filterLandmarksByZone(sample, 'namhae_german').map((x) => x.id),
-    ['e']
+    filterLandmarksByZone(sample, 'jeonju_hanok').map((x) => x.id),
+    ['f']
   );
 });
 

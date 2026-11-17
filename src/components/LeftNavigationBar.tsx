@@ -5,6 +5,7 @@ import {
   Building2,
   Mountain,
   Home,
+  Trees,
   MapPin,
   Navigation,
   RotateCcw,
@@ -132,6 +133,13 @@ export const LeftNavigationBar: React.FC<LeftNavigationBarProps> = ({
       subKo: '물건항 · 바이에른 언덕',
       icon: <Home className="w-4 h-4 shrink-0" />,
     },
+    {
+      id: 'jeonju_hanok',
+      labelKo: '전주 · 한옥마을',
+      labelEn: 'Jeonju Hanok Village',
+      subKo: '경기전 · 전동성당 · 오목대',
+      icon: <Trees className="w-4 h-4 shrink-0" />,
+    },
   ];
 
   const weatherOptions: { id: WeatherEffect; labelKo: string; labelEn: string; icon: React.ReactNode }[] = [
@@ -173,7 +181,7 @@ export const LeftNavigationBar: React.FC<LeftNavigationBarProps> = ({
 
           {showFull && (
             <span className="font-serif font-bold text-base tracking-tight text-amber-100 whitespace-nowrap truncate">
-              {lang === 'ko' ? '서울 3D 탐방' : 'Seoul 3D Tour'}
+              {lang === 'ko' ? '한국 명소 3D' : 'Korea 3D Tour'}
             </span>
           )}
         </div>

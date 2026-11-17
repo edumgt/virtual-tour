@@ -163,7 +163,7 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
               {lang === 'ko' ? '남산 정상 광장' : 'Namsan Summit'}
             </button>
           </>
-        ) : (
+        ) : activeZone === 'namhae_german' ? (
           <>
             <button
               onClick={() => onTeleport([-44, 2, 64], [0, 14, -20])}
@@ -191,6 +191,36 @@ export const VrActiveOverlay: React.FC<VrActiveOverlayProps> = ({
               className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
             >
               {lang === 'ko' ? '파독전시관 전망대' : 'Deutscher Platz Outlook'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onTeleport([14, 0.5, 18], [-78, 12, 18])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '태조로 중심가' : 'Taejo-ro Center'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-10, 0.5, -18], [-10, 6, -42])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '경기전 정전' : 'Gyeonggijeon Shrine'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([-54, 0.5, 18], [-78, 14, 18])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '전동성당 앞' : 'Jeondong Cathedral'}
+            </button>
+
+            <button
+              onClick={() => onTeleport([80, 17, 28], [-10, 10, 18])}
+              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-900/60 text-stone-200 hover:text-amber-100 border border-stone-700/70 text-xs whitespace-nowrap transition-colors"
+            >
+              {lang === 'ko' ? '오목대 전망' : 'Omokdae Overlook'}
             </button>
           </>
         )}
