@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PalaceMaterials } from '../materials';
+import { calculateEavesHeight } from '../../utils/rules';
 
 /**
  * Architectural Craft Library for Traditional Korean Royal Palace Architecture (조선 궁궐 건축 공법)
@@ -225,8 +226,8 @@ export function createKoreanRoof(
   roof.add(rafterSystem);
 
   // 2. Solid Connected Curved Roof Mesh (단일 일체형 기와 지붕 메쉬)
-  const segsX = 12;
-  const segsZ = 10;
+  const segsX = 48;
+  const segsZ = 32;
   const positions: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];
@@ -241,19 +242,7 @@ export function createKoreanRoof(
       const xBase = -halfW + u * width;
       const xNorm = (u - 0.5) * 2; // -1 to 1
 
-      // Distance from ridge line
-      const distFromRidgeX = Math.max(0, Math.abs(xNorm) - ridgeLengthRatio);
-      const distFromRidgeZ = Math.abs(zNorm);
-      const slopeFactor = Math.max(distFromRidgeZ, distFromRidgeX);
-
-      // Concave Korean roof slope: steep near ridge, flattens gracefully toward eaves
-      const ySlope = Math.pow(Math.max(0, 1 - slopeFactor), 1.35) * height;
-
-      // Graceful eaves corner flair (안허리곡 & 조로)
-      const cornerWeight = Math.pow(Math.abs(xNorm) * Math.abs(zNorm), 2);
-      const yCornerFlair = cornerWeight * eavesFlare * 1.6;
-
-      const yFinal = ySlope + yCornerFlair;
+      const yFinal = calculateEavesHeight(xNorm, zNorm, eavesFlare, height, ridgeLengthRatio);
 
       positions.push(xBase, yFinal, zBase);
       uvs.push(u * (width / 3.5), v * (depth / 3.5));
@@ -267,8 +256,8 @@ export function createKoreanRoof(
       const b = a + 1;
       const c = (iz + 1) * (segsX + 1) + ix;
       const d = c + 1;
-      indices.push(a, b, c);
-      indices.push(b, d, c);
+      indices.push(a, c, b);
+      indices.push(b, c, d);
     }
   }
 
@@ -279,6 +268,7 @@ export function createKoreanRoof(
   roofGeo.computeVertexNormals();
 
   const roofMesh = new THREE.Mesh(roofGeo, materials.giwaRoof);
+  roofMesh.name = 'roof_surface';
   roofMesh.castShadow = true;
   roofMesh.receiveShadow = true;
   roof.add(roofMesh);
@@ -358,21 +348,37 @@ export function createKoreanRoof(
 
   roof.add(ridgeGroup);
 
+  // Curved hip ridges follow the roof surface from the main ridge to each corner.
+  const corners = [
+    { xSign: -1, zSign: 1 },
+    { xSign: 1, zSign: 1 },
+    { xSign: -1, zSign: -1 },
+    { xSign: 1, zSign: -1 },
+  ];
+  corners.forEach((corner) => {
+    const points = Array.from({ length: 17 }, (_, i) => {
+      const t = i / 16;
+      const x = corner.xSign * (halfRidgeW + (halfW - halfRidgeW) * t);
+      const z = corner.zSign * halfD * t;
+      const y = calculateEavesHeight(x / halfW, z / halfD, eavesFlare, height, ridgeLengthRatio);
+      return new THREE.Vector3(x, y + 0.08, z);
+    });
+    const ridge = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 32, 0.1, 6, false),
+      materials.giwaRoof
+    );
+    ridge.castShadow = true;
+    roof.add(ridge);
+  });
+
   // 6. Japsang Sentinels along corner ridges (잡상 조각상)
   if (showJapsang) {
-    const corners = [
-      { xSign: -1, zSign: 1 },
-      { xSign: 1, zSign: 1 },
-      { xSign: -1, zSign: -1 },
-      { xSign: 1, zSign: -1 },
-    ];
-
     corners.forEach((corner) => {
       for (let j = 0; j < japsangCount; j++) {
         const t = 0.42 + (j / japsangCount) * 0.46; // Along corner hip ridge
         const jX = corner.xSign * (halfRidgeW + (halfW - halfRidgeW) * t);
         const jZ = corner.zSign * (halfD * t);
-        const jY = height * (1 - t * 0.82) + eavesFlare * 0.65;
+        const jY = calculateEavesHeight(jX / halfW, jZ / halfD, eavesFlare, height, ridgeLengthRatio) + 0.1;
 
         const figGroup = new THREE.Group();
         const base = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.12, 0.26), materials.eavesWhite);

@@ -212,7 +212,8 @@ export function calculateEavesHeight(
   height: number,
   ridgeLengthRatio = 0.6
 ): number {
-  const distFromRidgeX = Math.max(0, Math.abs(uNorm) - ridgeLengthRatio);
+  const distFromRidgeX = Math.max(0, Math.abs(uNorm) - ridgeLengthRatio) /
+    Math.max(1 - ridgeLengthRatio, 0.001);
   const distFromRidgeZ = Math.abs(vNorm);
   const slopeFactor = Math.max(distFromRidgeZ, distFromRidgeX);
 
