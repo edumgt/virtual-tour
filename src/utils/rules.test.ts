@@ -119,6 +119,11 @@ test('calculateEavesHeight computes authentic concave Korean slope with corner s
   const cornerY = calculateEavesHeight(1, 1, 0.4, 3.6, 0.6);
   assert.ok(cornerY > 0);
   assert.ok(cornerY >= 0.4 * 1.6);
+
+  // Both ends of the hip roof descend from the ridge to the side eaves.
+  assert.equal(calculateEavesHeight(1, 0, 0.4, 3.6, 0.6), 0);
+  assert.equal(calculateEavesHeight(-1, 0, 0.4, 3.6, 0.6), 0);
+  assert.ok(calculateEavesHeight(0.8, 0, 0.4, 3.6, 0.6) < ridgeY);
 });
 
 test('calculateRafterCount yields realistic counts for palace eaves', () => {
