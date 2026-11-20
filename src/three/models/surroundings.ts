@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PalaceMaterials } from '../materials';
+import { createKoreanRoof } from './architecturalCraft';
 import {
   createHeroKoreanPine,
   createKoreanPineTrunkGeometry,
@@ -15,18 +16,24 @@ function createGranitePeakGeometry(
   height: number,
   seed: number
 ): THREE.BufferGeometry {
-  const geo = new THREE.ConeGeometry(radius, height, 18, 8);
+  const geo = new THREE.ConeGeometry(radius, height, 28, 14);
   const pos = geo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
     const vx = pos.getX(i);
     const vy = pos.getY(i);
     const vz = pos.getZ(i);
     const hNorm = (vy + height * 0.5) / height;
-    const ridge =
-      Math.sin(vx * 0.12 + seed) * Math.cos(vz * 0.13 - seed * 0.7) * 5.2 * (1 - hNorm * 0.45) +
-      Math.sin(vx * 0.25 + vz * 0.22 + seed * 1.9) * 2.1;
+    const primary = Math.sin(vx * 0.11 + seed) * Math.cos(vz * 0.12 - seed * 0.7) * 5.8;
+    const secondary = Math.sin(vx * 0.23 + vz * 0.21 + seed * 1.9) * 2.6;
+    const cragStep = Math.cos(vx * 0.38 - vz * 0.34 + seed * 2.7) * 1.1;
+    const ridge = (primary + secondary + cragStep) * (1 - hNorm * 0.35);
     const radialScale = 1 + ridge / Math.max(8, radius);
-    pos.setXYZ(i, vx * radialScale, vy + (hNorm > 0.15 && hNorm < 0.9 ? ridge * 0.35 : 0), vz * radialScale);
+    pos.setXYZ(
+      i,
+      vx * radialScale,
+      vy + (hNorm > 0.12 && hNorm < 0.92 ? ridge * 0.4 : 0),
+      vz * radialScale
+    );
   }
   geo.computeVertexNormals();
   return geo;
@@ -138,21 +145,38 @@ export function buildSurroundings(materials: PalaceMaterials): THREE.Group {
   northWallCap.position.set(0, 4.4, -120);
   wallsGroup.add(northWall, northWallPlinth, northWallCap);
 
-  // Watchtower: Dongsipjagak (동십자각 - Corner Watchtower)
+  // Watchtower: Dongsipjagak (동십자각 - Corner Watchtower with authentic curved Korean roof)
   const watchtower = new THREE.Group();
   watchtower.name = 'dongsipjagak';
   watchtower.position.set(48, 0, 12);
 
   const wtBase = new THREE.Mesh(new THREE.BoxGeometry(8, 4.8, 8), materials.granite);
   wtBase.position.set(0, 2.4, 0);
-  const wtPlinth = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.5, 8.5), materials.granitePlinth);
-  wtPlinth.position.set(0, 0.25, 0);
-  const wtPavilion = new THREE.Mesh(new THREE.BoxGeometry(6, 2.6, 6), materials.dancheong);
-  wtPavilion.position.set(0, 6.1, 0);
-  const wtRoof = new THREE.Mesh(new THREE.ConeGeometry(5.6, 2.4, 4), materials.giwaRoof);
-  wtRoof.rotation.y = Math.PI * 0.25;
-  wtRoof.position.set(0, 8.4, 0);
-  watchtower.add(wtBase, wtPlinth, wtPavilion, wtRoof);
+  wtBase.castShadow = true;
+  wtBase.receiveShadow = true;
+  const wtPlinth = new THREE.Mesh(new THREE.BoxGeometry(8.6, 0.55, 8.6), materials.granitePlinth);
+  wtPlinth.position.set(0, 0.275, 0);
+  const wtCoping = new THREE.Mesh(new THREE.BoxGeometry(8.3, 0.35, 8.3), materials.granitePlinth);
+  wtCoping.position.set(0, 4.92, 0);
+  const wtPavilion = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.7, 6.2), materials.dancheong);
+  wtPavilion.position.set(0, 6.4, 0);
+  wtPavilion.castShadow = true;
+  [-2.8, 0, 2.8].forEach((px) => {
+    [-2.8, 2.8].forEach((pz) => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 2.7, 8), materials.pillarCrimson);
+      col.position.set(px, 6.4, pz);
+      watchtower.add(col);
+    });
+  });
+  const wtRoof = createKoreanRoof(9.4, 9.4, 2.6, materials, {
+    isPaljak: true,
+    eavesFlare: 0.72,
+    ridgeLengthRatio: 0.35,
+    showJapsang: true,
+    japsangCount: 3,
+  });
+  wtRoof.position.set(0, 7.6, 0);
+  watchtower.add(wtBase, wtPlinth, wtCoping, wtPavilion, wtRoof);
   wallsGroup.add(watchtower);
 
   root.add(wallsGroup);

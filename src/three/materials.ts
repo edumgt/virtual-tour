@@ -34,6 +34,7 @@ import {
   createCoastalRockTexture,
   createRedBrickTexture,
   createHanokWallTexture,
+  createWorldGroundTexture,
 } from './textures';
 
 export interface PalaceMaterials {
@@ -42,6 +43,7 @@ export interface PalaceMaterials {
   dancheongWood: THREE.MeshStandardMaterial;
   granite: THREE.MeshStandardMaterial;
   granitePlinth: THREE.MeshStandardMaterial;
+  worldGround: THREE.MeshStandardMaterial;
   royalWood: THREE.MeshStandardMaterial;
   pillarCrimson: THREE.MeshStandardMaterial;
   latticeWindow: THREE.MeshStandardMaterial;
@@ -204,6 +206,9 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
   const hanokWallTex = applyAniso(createHanokWallTexture());
   hanokWallTex.repeat.set(2, 1);
 
+  const worldGroundTex = applyAniso(createWorldGroundTexture());
+  worldGroundTex.repeat.set(36, 44);
+
   const waterTimeUniform = { value: 0 };
 
   const giwaRoof = new THREE.MeshStandardMaterial({
@@ -238,6 +243,15 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     color: 0x4e4a44,
     roughness: 0.88,
     metalness: 0.02,
+  });
+
+  const worldGround = new THREE.MeshStandardMaterial({
+    map: worldGroundTex,
+    bumpMap: worldGroundTex,
+    bumpScale: 0.025,
+    color: 0xebe6dc,
+    roughness: 0.92,
+    metalness: 0.01,
   });
 
   const royalWood = new THREE.MeshStandardMaterial({
@@ -580,20 +594,20 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     envMapIntensity: 1.35,
   });
 
-  // Realistic Flowing Han River Water with undulating current & wave normals
+  // Realistic Flowing Han River Water with undulating current, depth transition & shimmering specular ripples
   const hanRiverWater = new THREE.MeshPhysicalMaterial({
-    color: 0x10536d,
+    color: 0x0e4d66,
     normalMap: seaWaterNormalTex,
-    normalScale: new THREE.Vector2(0.85, 0.85),
-    roughness: 0.06,
-    metalness: 0.28,
+    normalScale: new THREE.Vector2(0.95, 0.95),
+    roughness: 0.055,
+    metalness: 0.34,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.06,
-    envMapIntensity: 1.85,
+    clearcoatRoughness: 0.05,
+    envMapIntensity: 2.05,
     transparent: true,
-    opacity: 0.92,
+    opacity: 0.94,
   });
-  hanRiverWater.customProgramCacheKey = () => 'han_river_water_v1';
+  hanRiverWater.customProgramCacheKey = () => 'han_river_water_v2';
   hanRiverWater.onBeforeCompile = (shader) => {
     shader.uniforms.uWaterTime = waterTimeUniform;
     shader.vertexShader = shader.vertexShader
@@ -606,9 +620,10 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-        float waveA = sin(transformed.x * 0.09 - uWaterTime * 1.6) * 0.065;
-        float waveB = cos(transformed.y * 0.21 + uWaterTime * 1.1) * 0.045;
-        transformed.z += waveA + waveB;
+        float waveA = sin(transformed.x * 0.095 - uWaterTime * 1.65) * 0.075;
+        float waveB = cos(transformed.y * 0.22 + uWaterTime * 1.15) * 0.048;
+        float waveC = sin((transformed.x + transformed.y) * 0.17 - uWaterTime * 2.1) * 0.025;
+        transformed.z += waveA + waveB + waveC;
         vRiverPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
       );
     shader.fragmentShader = shader.fragmentShader
@@ -621,12 +636,15 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
-        float bankFactor = smoothstep(8.0, 22.0, vRiverPos.z) * smoothstep(116.0, 100.0, vRiverPos.z);
-        vec3 shallowRiver = vec3(0.10, 0.44, 0.54);
-        vec3 deepRiver = vec3(0.05, 0.25, 0.36);
+        float bankFactor = smoothstep(8.0, 24.0, vRiverPos.z) * smoothstep(116.0, 98.0, vRiverPos.z);
+        vec3 shallowRiver = vec3(0.09, 0.38, 0.48);
+        vec3 deepRiver = vec3(0.04, 0.19, 0.31);
         diffuseColor.rgb = mix(shallowRiver, deepRiver, bankFactor);
-        float rippleGlint = sin(vRiverPos.x * 0.28 - uWaterTime * 2.1 + sin(vRiverPos.z * 0.4)) * 0.5 + 0.5;
-        diffuseColor.rgb += vec3(0.02, 0.04, 0.05) * smoothstep(0.7, 1.0, rippleGlint);`
+        float rippleGlint = sin(vRiverPos.x * 0.32 - uWaterTime * 2.2 + sin(vRiverPos.z * 0.45)) * 0.5 + 0.5;
+        float fineGlint = cos(vRiverPos.x * 0.72 + vRiverPos.z * 0.55 - uWaterTime * 2.8) * 0.5 + 0.5;
+        diffuseColor.rgb += vec3(0.04, 0.07, 0.09) * smoothstep(0.68, 1.0, rippleGlint * fineGlint);
+        float embankmentFoam = (1.0 - smoothstep(8.0, 11.2, vRiverPos.z)) + (1.0 - smoothstep(112.8, 116.0, vRiverPos.z));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.75, 0.87, 0.92), clamp(embankmentFoam * 0.32, 0.0, 0.32));`
       );
   };
 
@@ -814,6 +832,7 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     dancheongWood,
     granite,
     granitePlinth,
+    worldGround,
     royalWood,
     pillarCrimson,
     latticeWindow,
@@ -905,6 +924,7 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     coastalRockTex,
     jeondongBrickTex,
     hanokWallTex,
+    worldGroundTex,
   ];
 
   return {
@@ -913,6 +933,7 @@ export function initPalaceMaterials(maxAnisotropy = 4): PalaceMaterials {
     dancheongWood,
     granite,
     granitePlinth,
+    worldGround,
     royalWood,
     pillarCrimson,
     latticeWindow,

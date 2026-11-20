@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { StereoEffect } from 'three/examples/jsm/effects/StereoEffect.js';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { TimePreset, RenderingMode, LandmarkInfo, WeatherEffect, VrMode, VrState, SceneZone, CameraTelemetry } from '../types';
 import { getLightingPreset, dampVector3, getZoneOverviewCamera, evaluateBridgeCrossingPose } from '../utils/rules';
 import { initPalaceMaterials, PalaceMaterials } from './materials';
@@ -43,11 +44,15 @@ export class SceneManager {
   private deviceOrientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
   private deviceEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 
-  // Lighting elements
+  // Lighting & Sky elements
   private sunLight: THREE.DirectionalLight;
+  private rimLight: THREE.DirectionalLight;
   private hemiLight: THREE.HemisphereLight;
   private ambientLight: THREE.AmbientLight;
   private lanternLights: THREE.PointLight[] = [];
+  private sky: Sky;
+  private nightStars: THREE.Points | null = null;
+  private moonMesh: THREE.Mesh | null = null;
 
   // Weather & Particle Systems
   private currentWeather: WeatherEffect = 'clear';
@@ -148,7 +153,7 @@ export class SceneManager {
 
     // Camera & WebXR Dolly Rig
     const aspect = this.container.clientWidth / this.container.clientHeight;
-    this.camera = new THREE.PerspectiveCamera(48, aspect, 0.5, 900);
+    this.camera = new THREE.PerspectiveCamera(48, aspect, 0.5, 2400);
     this.camera.position.set(0, 12, 48);
 
     this.cameraDolly = new THREE.Group();
@@ -160,7 +165,7 @@ export class SceneManager {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = !this.isSoftwareGl;
     this.controls.dampingFactor = 0.05;
-    this.controls.maxPolarAngle = Math.PI * 0.49; // Keep above ground plane
+    this.controls.maxPolarAngle = Math.PI * 0.72; // Allow looking upward at towers & bridge arches while clamping camera.y >= 1.2
     this.controls.minDistance = 3;
     this.controls.maxDistance = 380;
     this.controls.target.set(0, 5, 0);
@@ -202,17 +207,23 @@ export class SceneManager {
     this.sunLight.position.set(40, 65, 35);
     this.sunLight.castShadow = !this.isSoftwareGl;
     if (!this.isSoftwareGl) {
-      this.sunLight.shadow.mapSize.width = 1024;
-      this.sunLight.shadow.mapSize.height = 1024;
-      this.sunLight.shadow.bias = -0.0005;
+      this.sunLight.shadow.mapSize.width = 2048;
+      this.sunLight.shadow.mapSize.height = 2048;
+      this.sunLight.shadow.bias = -0.0004;
+      this.sunLight.shadow.normalBias = 0.04;
       this.sunLight.shadow.camera.left = -60;
       this.sunLight.shadow.camera.right = 60;
       this.sunLight.shadow.camera.top = 60;
       this.sunLight.shadow.camera.bottom = -60;
       this.sunLight.shadow.camera.near = 10;
-      this.sunLight.shadow.camera.far = 180;
+      this.sunLight.shadow.camera.far = 220;
     }
     this.scene.add(this.sunLight);
+
+    // Subtle cool counter-directional rim light for architectural 3-point separation
+    this.rimLight = new THREE.DirectionalLight(0xa8ccf0, 0.45);
+    this.rimLight.position.set(-55, 34, -48);
+    this.scene.add(this.rimLight);
 
     this.hemiLight = new THREE.HemisphereLight(0x90c2ff, 0x5a5040, 1.1);
     this.scene.add(this.hemiLight);
@@ -220,11 +231,53 @@ export class SceneManager {
     this.ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
     this.scene.add(this.ambientLight);
 
+    // Procedural Atmospheric Sky Dome (Rayleigh + Mie physical scattering)
+    this.sky = new Sky();
+    this.sky.scale.setScalar(2000);
+    this.scene.add(this.sky);
+
+    // Night Starfield & Luminous Pale Moon (visible in Night preset)
+    const starCount = 900;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const theta = ((i * 2.39996) % (Math.PI * 2));
+      const phi = Math.acos(0.12 + ((i * 73) % 1000) / 1150);
+      const r = 780 + (i % 7) * 18;
+      starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      starPos[i * 3 + 1] = r * Math.cos(phi);
+      starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({
+      color: 0xe6f0ff,
+      size: 2.2,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.85,
+      fog: false,
+      depthWrite: false,
+    });
+    this.nightStars = new THREE.Points(starGeo, starMat);
+    this.nightStars.visible = false;
+    this.scene.add(this.nightStars);
+
+    const moonGeo = new THREE.SphereGeometry(14, 20, 16);
+    const moonMat = new THREE.MeshBasicMaterial({
+      color: 0xf4f0dc,
+      fog: false,
+    });
+    this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
+    this.moonMesh.position.set(-220, 290, -480);
+    this.moonMesh.visible = false;
+    this.scene.add(this.moonMesh);
+
     // Build Entire Joseon Palace Realm
     this.buildWorld();
 
     // Weather & Environmental Particle Systems
     this.initWeatherParticleSystems();
+    this.applyAtmosphere();
 
     // Event Listeners
     window.addEventListener('resize', this.handleResize);
@@ -243,8 +296,8 @@ export class SceneManager {
 
   private buildWorld() {
     // 1. Broad Terraced Ground (대지 평면)
-    const groundGeo = new THREE.PlaneGeometry(420, 520);
-    const ground = new THREE.Mesh(groundGeo, this.materials.granite);
+    const groundGeo = new THREE.PlaneGeometry(460, 560);
+    const ground = new THREE.Mesh(groundGeo, this.materials.worldGround);
     ground.rotation.x = -Math.PI * 0.5;
     ground.position.set(0, 0, 10);
     ground.receiveShadow = true;
@@ -612,8 +665,12 @@ export class SceneManager {
 
   private applyAtmosphere() {
     const config = getLightingPreset(this.currentTimePreset);
+    const skyUniforms = this.sky.material.uniforms;
 
     if (this.currentWeather === 'snow') {
+      this.sky.visible = false;
+      if (this.nightStars) this.nightStars.visible = false;
+      if (this.moonMesh) this.moonMesh.visible = false;
       this.scene.background = new THREE.Color(0xdce7f2);
       if (this.scene.fog instanceof THREE.Fog) {
         this.scene.fog.color.setHex(0xdce7f2);
@@ -621,9 +678,13 @@ export class SceneManager {
         this.scene.fog.far = 280;
       }
       this.sunLight.intensity = config.sunIntensity * 0.75;
+      this.rimLight.intensity = 0.25;
       this.ambientLight.intensity = Math.max(config.ambientIntensity, 0.45);
       this.renderer.toneMappingExposure = Math.min(config.exposure * 1.05, 1.25);
     } else if (this.currentWeather === 'rain') {
+      this.sky.visible = false;
+      if (this.nightStars) this.nightStars.visible = false;
+      if (this.moonMesh) this.moonMesh.visible = false;
       this.scene.background = new THREE.Color(0x9aa8b5);
       if (this.scene.fog instanceof THREE.Fog) {
         this.scene.fog.color.setHex(0x9aa8b5);
@@ -631,6 +692,7 @@ export class SceneManager {
         this.scene.fog.far = 220;
       }
       this.sunLight.intensity = config.sunIntensity * 0.5;
+      this.rimLight.intensity = 0.2;
       this.ambientLight.intensity = Math.max(config.ambientIntensity, 0.4);
       this.renderer.toneMappingExposure = config.exposure * 0.9;
     } else {
@@ -638,21 +700,73 @@ export class SceneManager {
       this.sunLight.intensity = config.sunIntensity;
       this.sunLight.position.set(...config.sunPosition);
 
+      // Opposite-sun rim light for clean silhouette edge separation
+      this.rimLight.position.set(
+        -config.sunPosition[0] * 0.85,
+        Math.max(22, config.sunPosition[1] * 0.55),
+        -config.sunPosition[2] * 0.85
+      );
+      if (this.currentTimePreset === 'sunset') {
+        this.rimLight.color.setHex(0xffb88c);
+        this.rimLight.intensity = 0.55;
+      } else if (this.currentTimePreset === 'dawn') {
+        this.rimLight.color.setHex(0xfbc8a8);
+        this.rimLight.intensity = 0.45;
+      } else if (this.currentTimePreset === 'night') {
+        this.rimLight.color.setHex(0x6b8fd4);
+        this.rimLight.intensity = 0.38;
+      } else {
+        this.rimLight.color.setHex(0x9ec8f5);
+        this.rimLight.intensity = 0.48;
+      }
+
       this.hemiLight.color.setHex(config.hemiSkyColor);
       this.hemiLight.groundColor.setHex(config.hemiGroundColor);
       this.hemiLight.intensity = config.hemiIntensity;
 
       this.ambientLight.intensity = config.ambientIntensity;
 
-      const isPanoramicZone = this.currentZone !== 'gwanghwamun';
-      this.scene.background = new THREE.Color(config.fogColor);
-      if (this.scene.fog instanceof THREE.Fog) {
-        this.scene.fog.color.setHex(config.fogColor);
-        this.scene.fog.near = isPanoramicZone ? Math.max(config.fogNear, 150) : config.fogNear;
-        this.scene.fog.far = isPanoramicZone ? Math.max(config.fogFar, 560) : config.fogFar;
+      // Configure physical Rayleigh/Mie sky shader for Clear weather
+      const isNight = this.currentTimePreset === 'night';
+      this.sky.visible = !isNight;
+      if (this.nightStars) this.nightStars.visible = isNight;
+      if (this.moonMesh) this.moonMesh.visible = isNight;
+
+      if (!isNight) {
+        const sunDir = new THREE.Vector3(...config.sunPosition).normalize();
+        if (this.currentTimePreset === 'sunset') {
+          skyUniforms['turbidity'].value = 9.5;
+          skyUniforms['rayleigh'].value = 3.1;
+          skyUniforms['mieCoefficient'].value = 0.009;
+          skyUniforms['mieDirectionalG'].value = 0.86;
+          sunDir.set(-0.88, 0.075, -0.46).normalize();
+        } else if (this.currentTimePreset === 'dawn') {
+          skyUniforms['turbidity'].value = 5.5;
+          skyUniforms['rayleigh'].value = 2.4;
+          skyUniforms['mieCoefficient'].value = 0.005;
+          skyUniforms['mieDirectionalG'].value = 0.8;
+          sunDir.set(0.75, 0.16, 0.58).normalize();
+        } else {
+          skyUniforms['turbidity'].value = 1.9;
+          skyUniforms['rayleigh'].value = 2.35;
+          skyUniforms['mieCoefficient'].value = 0.0022;
+          skyUniforms['mieDirectionalG'].value = 0.76;
+          sunDir.set(0.42, 0.44, 0.79).normalize();
+        }
+        skyUniforms['sunPosition'].value.copy(sunDir.multiplyScalar(1000));
       }
 
-      this.renderer.toneMappingExposure = config.exposure;
+      const isPanoramicZone = this.currentZone !== 'gwanghwamun';
+      const fogHex = this.currentTimePreset === 'sunset' ? 0xe5b291 : config.fogColor;
+      this.scene.background = new THREE.Color(fogHex);
+      if (this.scene.fog instanceof THREE.Fog) {
+        this.scene.fog.color.setHex(fogHex);
+        this.scene.fog.near = isPanoramicZone ? Math.max(config.fogNear, 190) : config.fogNear;
+        this.scene.fog.far = isPanoramicZone ? Math.max(config.fogFar, 680) : config.fogFar;
+      }
+
+      this.renderer.toneMappingExposure =
+        this.currentTimePreset === 'sunset' ? config.exposure * 0.94 : config.exposure * 0.96;
     }
 
     this.lanternLights.forEach((light) => {
@@ -754,7 +868,7 @@ export class SceneManager {
     const pose = evaluateBridgeCrossingPose(0);
     this.camera.position.set(...pose.position);
     this.controls.target.set(...pose.target);
-    this.controls.update();
+    this.camera.lookAt(this.controls.target);
     this.emitCameraTelemetry(true);
     this.onBridgeDriveStateChange?.(true);
   }
@@ -775,6 +889,7 @@ export class SceneManager {
     this.materials.giwaRoof.wireframe = isWireframe;
     this.materials.dancheong.wireframe = isWireframe;
     this.materials.granite.wireframe = isWireframe;
+    this.materials.worldGround.wireframe = isWireframe;
     this.materials.royalWood.wireframe = isWireframe;
     this.materials.lotteTowerGlass.wireframe = isWireframe;
     this.materials.lotteMallFacade.wireframe = isWireframe;
@@ -1050,10 +1165,17 @@ export class SceneManager {
     } else if (this.currentVrMode === 'cardboard' && this.stereoEffect) {
       if (!this.deviceOrientationHandler) {
         this.controls.update();
+        if (this.camera.position.y < 1.2) this.camera.position.y = 1.2;
       }
       this.stereoEffect.render(this.scene, this.camera);
     } else {
-      this.controls.update();
+      if (this.isBridgeDriving) {
+        // Drive cleanly along the bridge deck looking upward through twin arches without polar-angle snap
+        this.camera.lookAt(this.controls.target);
+      } else {
+        this.controls.update();
+        if (this.camera.position.y < 1.2) this.camera.position.y = 1.2;
+      }
       this.renderer.render(this.scene, this.camera);
     }
 
@@ -1150,6 +1272,21 @@ export class SceneManager {
       this.scene.remove(this.rainParticles);
     }
     if (this.rainTexture) this.rainTexture.dispose();
+
+    // Dispose Sky & Celestial objects
+    this.sky.geometry.dispose();
+    this.sky.material.dispose();
+    this.scene.remove(this.sky);
+    if (this.nightStars) {
+      this.nightStars.geometry.dispose();
+      (this.nightStars.material as THREE.Material).dispose();
+      this.scene.remove(this.nightStars);
+    }
+    if (this.moonMesh) {
+      this.moonMesh.geometry.dispose();
+      (this.moonMesh.material as THREE.Material).dispose();
+      this.scene.remove(this.moonMesh);
+    }
 
     this.controls.dispose();
     this.materials.dispose();

@@ -645,16 +645,42 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   ) => {
     const g = new THREE.Group();
     g.position.set(x, 0, z);
+
+    const podium = new THREE.Mesh(new THREE.BoxGeometry(w + 1.8, 3.2, d + 1.8), materials.granitePlinth);
+    podium.position.y = 1.6;
+    podium.receiveShadow = true;
+
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     body.position.y = h * 0.5;
     body.castShadow = true;
     body.receiveShadow = true;
-    const crown = new THREE.Mesh(
-      new THREE.BoxGeometry(w * 0.82, 2.5, d * 0.82),
-      materials.modernConcrete
+
+    // Mid-height dark architectural mechanical louver floor
+    const mechBand = new THREE.Mesh(
+      new THREE.BoxGeometry(w + 0.35, 1.8, d + 0.35),
+      materials.modernMullion
     );
-    crown.position.y = h + 1.25;
-    g.add(body, crown);
+    mechBand.position.y = h * 0.62;
+
+    const parapet = new THREE.Mesh(
+      new THREE.BoxGeometry(w + 0.5, 1.1, d + 0.5),
+      materials.modernMullion
+    );
+    parapet.position.y = h + 0.55;
+
+    const crown = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.72, 3.2, d * 0.72),
+      materials.modernGlass
+    );
+    crown.position.y = h + 2.1;
+
+    const crownRoof = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.76, 0.5, d * 0.76),
+      materials.modernMullion
+    );
+    crownRoof.position.y = h + 3.9;
+
+    g.add(podium, body, mechBand, parapet, crown, crownRoof);
     return g;
   };
 
@@ -663,12 +689,12 @@ export function buildSeokchonLotte(materials: PalaceMaterials): THREE.Group {
   // Samsung SDS & Hyanggun Tower (West of Lotte World)
   root.add(buildJamsilTower(-118, -34, 24, 48, 24, materials.modernGovernment));
   // Jamsil Han River Skyline Backdrop Towers (North of Lotte Complex, Z = -95)
-  root.add(buildJamsilTower(-78, -96, 28, 42, 22, materials.modernConcrete));
+  root.add(buildJamsilTower(-78, -96, 28, 42, 22, materials.lotteMallFacade));
   root.add(buildJamsilTower(-32, -98, 22, 58, 22, materials.modernGlass));
   root.add(buildJamsilTower(28, -96, 24, 50, 22, materials.modernGovernment));
   root.add(buildJamsilTower(88, -94, 26, 44, 22, materials.modernGlass));
   // Galleria Palace Twin Towers (Southwest of West Lake)
-  root.add(buildJamsilTower(-136, 48, 20, 62, 20, materials.modernConcrete));
+  root.add(buildJamsilTower(-136, 48, 20, 62, 20, materials.lotteMallFacade));
   root.add(buildJamsilTower(-136, 82, 20, 56, 20, materials.modernGlass));
   // Lake Palace / Jamsil High-Rises South of East Lake
   root.add(buildJamsilTower(136, 62, 22, 46, 26, materials.modernGovernment));

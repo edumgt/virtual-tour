@@ -275,32 +275,56 @@ export function createKoreanRoof(
 
   // 3. Gable Endboards (합각벽 - Hapgak-byeok) if Paljak hip-and-gable roof
   if (isPaljak) {
-    const gableW = depth * 0.42;
-    const gableH = height * 0.72;
+    const gableHalfW = depth * 0.34;
+    const gableH = height * 0.64;
+    const gableShape = new THREE.Shape();
+    gableShape.moveTo(-gableHalfW, 0);
+    gableShape.lineTo(gableHalfW, 0);
+    gableShape.lineTo(0, gableH);
+    gableShape.closePath();
+
+    const gableGeo = new THREE.ExtrudeGeometry(gableShape, {
+      depth: 0.22,
+      bevelEnabled: false,
+    });
+    gableGeo.translate(0, 0, -0.11);
+
+    const bargeLen = Math.hypot(gableHalfW, gableH) * 1.04;
+    const bargeAngle = Math.atan2(gableH, gableHalfW);
 
     [-halfRidgeW, halfRidgeW].forEach((gx) => {
       const gableGroup = new THREE.Group();
-      gableGroup.position.set(gx, height * 0.58, 0);
+      gableGroup.position.set(gx, height * 0.34, 0);
       gableGroup.rotation.y = gx > 0 ? Math.PI * 0.5 : -Math.PI * 0.5;
 
-      // Triangular patterned brick wall panel (전돌 합각판)
-      const gableWall = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, gableW, gableH, 3),
-        materials.gableHapgak
-      );
-      gableWall.position.set(0, 0, 0);
-      gableWall.scale.set(1, 1, 0.25);
+      // Crisp triangular patterned brick gable wall (전돌 합각판)
+      const gableWall = new THREE.Mesh(gableGeo, materials.gableHapgak);
+      gableWall.castShadow = true;
+      gableWall.receiveShadow = true;
 
       // Wooden decorative bargeboards & moldings (박공판)
-      const trimLeft = new THREE.Mesh(new THREE.BoxGeometry(gableW * 0.65, 0.22, 0.16), materials.dancheong);
-      trimLeft.rotation.z = Math.PI * 0.26;
-      trimLeft.position.set(-gableW * 0.26, 0, 0.12);
+      const trimLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(bargeLen, 0.24, 0.28),
+        materials.dancheong
+      );
+      trimLeft.rotation.z = bargeAngle;
+      trimLeft.position.set(-gableHalfW * 0.5, gableH * 0.5, 0.06);
 
-      const trimRight = new THREE.Mesh(new THREE.BoxGeometry(gableW * 0.65, 0.22, 0.16), materials.dancheong);
-      trimRight.rotation.z = -Math.PI * 0.26;
-      trimRight.position.set(gableW * 0.26, 0, 0.12);
+      const trimRight = new THREE.Mesh(
+        new THREE.BoxGeometry(bargeLen, 0.24, 0.28),
+        materials.dancheong
+      );
+      trimRight.rotation.z = -bargeAngle;
+      trimRight.position.set(gableHalfW * 0.5, gableH * 0.5, 0.06);
 
-      gableGroup.add(gableWall, trimLeft, trimRight);
+      // Horizontal tie sill under gable triangle (합각 머름대)
+      const gableSill = new THREE.Mesh(
+        new THREE.BoxGeometry(gableHalfW * 2.08, 0.2, 0.3),
+        materials.royalWood
+      );
+      gableSill.position.set(0, 0.04, 0.04);
+
+      gableGroup.add(gableWall, trimLeft, trimRight, gableSill);
       roof.add(gableGroup);
     });
   }

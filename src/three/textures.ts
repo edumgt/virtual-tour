@@ -761,19 +761,21 @@ export function createModernGlassFacadeTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Deep architectural glass base (tinted blue-black)
-  ctx.fillStyle = '#1c2634';
-  ctx.fillRect(0, 0, 512, 512);
-
-  // Subtle sky reflection gradient
-  const skyGrad = ctx.createLinearGradient(0, 0, 512, 512);
-  skyGrad.addColorStop(0, '#2b3f5c');
-  skyGrad.addColorStop(0.5, '#1e2c3d');
-  skyGrad.addColorStop(1, '#151e2a');
+  // Deep architectural glass base with natural horizon-to-zenith sky reflection
+  const skyGrad = ctx.createLinearGradient(0, 0, 120, 512);
+  skyGrad.addColorStop(0, '#3a587a');
+  skyGrad.addColorStop(0.35, '#253b54');
+  skyGrad.addColorStop(0.7, '#1b2c40');
+  skyGrad.addColorStop(1, '#142030');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, 512, 512);
 
-  // Office floor grid: 8 floors x 8 window bays
+  // Subtle soft cloud-streak sheen across facade
+  ctx.fillStyle = 'rgba(180, 214, 245, 0.08)';
+  ctx.fillRect(0, 48, 512, 44);
+  ctx.fillRect(0, 276, 512, 58);
+
+  // Office floor grid: 8 floors x 8 window bays with recessed interior depth & venetian blinds
   const rows = 8;
   const cols = 8;
   const rowH = 512 / rows;
@@ -783,30 +785,35 @@ export function createModernGlassFacadeTexture(): THREE.CanvasTexture {
     for (let c = 0; c < cols; c++) {
       const x = c * colW;
       const y = r * rowH;
+      const hash = (r * 17 + c * 11 + r * c * 3) % 19;
 
-      // Dark window pane with glass reflection
       const paneGrad = ctx.createLinearGradient(x, y, x + colW, y + rowH);
-      paneGrad.addColorStop(0, 'rgba(80, 130, 185, 0.45)');
-      paneGrad.addColorStop(0.3, 'rgba(40, 75, 120, 0.25)');
-      paneGrad.addColorStop(1, 'rgba(20, 40, 70, 0.6)');
+      paneGrad.addColorStop(0, 'rgba(110, 162, 215, 0.42)');
+      paneGrad.addColorStop(0.45, 'rgba(38, 68, 106, 0.28)');
+      paneGrad.addColorStop(1, 'rgba(15, 28, 48, 0.62)');
       ctx.fillStyle = paneGrad;
-      ctx.fillRect(x + 2, y + 2, colW - 4, rowH - 4);
+      ctx.fillRect(x + 2, y + 2, colW - 4, rowH - 5);
 
-      // Random warm interior office light (15% chance of warm glow)
-      if ((r * 13 + c * 7) % 7 === 1) {
-        ctx.fillStyle = 'rgba(255, 230, 170, 0.35)';
-        ctx.fillRect(x + 6, y + 6, colW - 12, rowH - 12);
+      // Subtle interior floor ceiling glow or drawn blind slats
+      if (hash % 5 === 1) {
+        ctx.fillStyle = 'rgba(255, 232, 182, 0.36)';
+        ctx.fillRect(x + 5, y + 7, colW - 10, rowH - 18);
+      } else if (hash % 4 === 0) {
+        ctx.fillStyle = 'rgba(195, 212, 230, 0.18)';
+        ctx.fillRect(x + 4, y + 4, colW - 8, (rowH - 10) * 0.45);
       }
 
-      // Aluminum mullions (horizontal and vertical window frames)
-      ctx.strokeStyle = '#4a5568';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(x, y, colW, rowH);
+      // Crisp anodized aluminum mullions
+      ctx.strokeStyle = '#536072';
+      ctx.lineWidth = 2.2;
+      ctx.strokeRect(x + 1, y + 1, colW - 2, rowH - 2);
     }
 
-    // Heavy concrete floor spandrel band between storeys
-    ctx.fillStyle = '#2d3748';
-    ctx.fillRect(0, (r + 1) * rowH - 3, 512, 3);
+    // Insulated structural spandrel panel between storeys
+    ctx.fillStyle = '#242e3d';
+    ctx.fillRect(0, (r + 1) * rowH - 7, 512, 7);
+    ctx.fillStyle = 'rgba(200, 220, 240, 0.22)';
+    ctx.fillRect(0, (r + 1) * rowH - 8, 512, 1.5);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -1148,31 +1155,71 @@ export function createNamsanTowerBodyTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Clean silver-white architectural aluminum panel base
-  ctx.fillStyle = '#e5e9ef';
+  // Brushed architectural titanium-white cladding panels with subtle seam shading
+  const claddingGrad = ctx.createLinearGradient(0, 0, 0, 512);
+  claddingGrad.addColorStop(0, '#eef2f6');
+  claddingGrad.addColorStop(0.5, '#dde4ec');
+  claddingGrad.addColorStop(1, '#cdd6e0');
+  ctx.fillStyle = claddingGrad;
   ctx.fillRect(0, 0, 512, 512);
 
-  // Horizontal observatory window bands
-  const bands = [110, 220, 330];
-  bands.forEach((y, idx) => {
-    ctx.fillStyle = '#18283c';
-    ctx.fillRect(0, y, 512, 68);
+  // Fine vertical cladding seam lines
+  ctx.fillStyle = 'rgba(92, 108, 128, 0.35)';
+  for (let x = 0; x < 512; x += 32) {
+    ctx.fillRect(x, 0, 1.5, 512);
+  }
 
-    // Warm interior dining & observatory glow
-    ctx.fillStyle = idx === 1 ? 'rgba(255, 210, 125, 0.48)' : 'rgba(130, 200, 255, 0.35)';
-    ctx.fillRect(0, y + 10, 512, 48);
+  // Three tiered 360-degree observatory & n.Grill revolving restaurant bands
+  const bands = [
+    { y: 78, h: 78, warm: false },
+    { y: 204, h: 92, warm: true },
+    { y: 344, h: 74, warm: false },
+  ];
+  bands.forEach((b) => {
+    // Deep recessed anodized frame shadow
+    ctx.fillStyle = '#152233';
+    ctx.fillRect(0, b.y - 4, 512, b.h + 8);
 
-    // Vertical dark steel mullions
-    ctx.fillStyle = '#2d3748';
+    // Reflective tinted glass gradient
+    const gGrad = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
+    gGrad.addColorStop(0, '#1c344f');
+    gGrad.addColorStop(0.42, '#2d5278');
+    gGrad.addColorStop(0.65, '#17293e');
+    gGrad.addColorStop(1, '#101d2e');
+    ctx.fillStyle = gGrad;
+    ctx.fillRect(0, b.y, 512, b.h);
+
+    // Interior warm dining lights & ceiling spot dots
     for (let x = 0; x < 512; x += 24) {
-      ctx.fillRect(x, y, 4, 68);
+      const lit = ((x / 24) % 3) !== 1;
+      if (b.warm) {
+        ctx.fillStyle = lit ? 'rgba(255, 214, 132, 0.45)' : 'rgba(255, 194, 110, 0.24)';
+        ctx.fillRect(x + 4, b.y + 12, 16, b.h - 24);
+      } else {
+        ctx.fillStyle = lit ? 'rgba(155, 215, 255, 0.30)' : 'rgba(255, 232, 178, 0.22)';
+        ctx.fillRect(x + 4, b.y + 10, 16, b.h - 20);
+      }
+
+      // Dark structural steel vertical mullions
+      ctx.fillStyle = '#253040';
+      ctx.fillRect(x, b.y, 3.5, b.h);
+      ctx.fillStyle = 'rgba(220, 235, 250, 0.28)';
+      ctx.fillRect(x + 3.5, b.y, 1, b.h);
     }
+
+    // Horizontal aluminum transom bar & sill glint
+    ctx.fillStyle = '#9aa8b8';
+    ctx.fillRect(0, b.y - 5, 512, 3);
+    ctx.fillRect(0, b.y + b.h + 2, 512, 3);
   });
 
-  // Metallic panel seam rings
-  ctx.fillStyle = '#94a3b8';
-  for (let y = 0; y < 512; y += 64) {
-    ctx.fillRect(0, y, 512, 3);
+  // Top & bottom mechanical ventilation louver bands
+  ctx.fillStyle = '#8b99ab';
+  for (let y = 14; y < 56; y += 7) {
+    ctx.fillRect(0, y, 512, 2.5);
+  }
+  for (let y = 446; y < 496; y += 7) {
+    ctx.fillRect(0, y, 512, 2.5);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -1184,6 +1231,7 @@ export function createNamsanTowerBodyTexture(): THREE.CanvasTexture {
 
 /**
  * Creates Hannam-dong luxury hillside villa & terraced apartment facade texture
+ * with warm honed travertine limestone courses, deep recessed glass terraces, and warm interior lights
  */
 export function createHannamVillaTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
@@ -1191,11 +1239,17 @@ export function createHannamVillaTexture(): THREE.CanvasTexture {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Warm travertine & cream limestone exterior
-  ctx.fillStyle = '#ded5c5';
+  // Warm honed travertine limestone base
+  ctx.fillStyle = '#dfd6c5';
   ctx.fillRect(0, 0, 512, 512);
 
-  const rows = 5;
+  // Subtle horizontal stone ashlar cladding lines & mineral tone shifts
+  for (let y = 0; y < 512; y += 16) {
+    ctx.fillStyle = y % 32 === 0 ? 'rgba(130, 118, 98, 0.14)' : 'rgba(255, 252, 244, 0.16)';
+    ctx.fillRect(0, y, 512, 1.5);
+  }
+
+  const rows = 4;
   const cols = 4;
   const rowH = 512 / rows;
   const colW = 512 / cols;
@@ -1205,27 +1259,44 @@ export function createHannamVillaTexture(): THREE.CanvasTexture {
       const x = c * colW;
       const y = r * rowH;
 
-      // Recessed bronze-framed panoramic terrace window
-      ctx.fillStyle = '#24303e';
-      ctx.fillRect(x + 12, y + 14, colW - 24, rowH - 34);
+      // Deep shadowed recessed balcony loggia
+      ctx.fillStyle = '#202935';
+      ctx.fillRect(x + 10, y + 16, colW - 20, rowH - 34);
 
-      // Warm residential interior light
-      if ((r * 5 + c * 3) % 4 !== 0) {
-        ctx.fillStyle = 'rgba(255, 226, 175, 0.36)';
-        ctx.fillRect(x + 16, y + 18, colW - 32, rowH - 42);
+      // Warm cedar wood loggia ceiling soffit
+      ctx.fillStyle = '#744b2f';
+      ctx.fillRect(x + 12, y + 18, colW - 24, 10);
+
+      // Panoramic tinted floor-to-ceiling sliding glass
+      const winGrad = ctx.createLinearGradient(x + 12, y + 28, x + colW - 12, y + rowH - 22);
+      winGrad.addColorStop(0, '#304963');
+      winGrad.addColorStop(0.5, '#1e3044');
+      winGrad.addColorStop(1, '#2a4158');
+      ctx.fillStyle = winGrad;
+      ctx.fillRect(x + 12, y + 28, colW - 24, rowH - 50);
+
+      // Soft warm residential living-room interior glow
+      if ((r * 5 + c * 3) % 3 !== 0) {
+        ctx.fillStyle = 'rgba(255, 224, 168, 0.34)';
+        ctx.fillRect(x + 18, y + 32, colW - 36, rowH - 58);
       }
 
-      // Glass balcony balustrade
-      ctx.fillStyle = 'rgba(175, 210, 230, 0.45)';
-      ctx.fillRect(x + 10, y + rowH - 26, colW - 20, 14);
-      ctx.strokeStyle = '#3e3a35';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 10, y + rowH - 26, colW - 20, 14);
+      // Slim dark bronze vertical window divider
+      ctx.fillStyle = '#2c2926';
+      ctx.fillRect(x + colW * 0.5 - 2, y + 28, 4, rowH - 50);
+
+      // Frameless laminated glass balcony railing with bronze top rail
+      ctx.fillStyle = 'rgba(182, 214, 232, 0.42)';
+      ctx.fillRect(x + 10, y + rowH - 34, colW - 20, 16);
+      ctx.fillStyle = '#332e2a';
+      ctx.fillRect(x + 10, y + rowH - 35, colW - 20, 2.5);
     }
 
-    // Travertine stone floor band
-    ctx.fillStyle = '#c5baa7';
-    ctx.fillRect(0, r * rowH, 512, 6);
+    // Crisp overhanging travertine floor slab cornice + subtle shadow line underneath
+    ctx.fillStyle = '#ebe3d4';
+    ctx.fillRect(0, r * rowH, 512, 9);
+    ctx.fillStyle = 'rgba(72, 62, 50, 0.32)';
+    ctx.fillRect(0, r * rowH + 9, 512, 3);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -1447,42 +1518,74 @@ export function createGermanCobbleTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Creates lush coastal hillside grass, moss & clover meadow texture
+ * Creates seamless, toroidal multi-octave meadow/hillside grass & moss texture
+ * (eliminates visible dot-grid tiling across large mountain and park terrains).
  */
 export function createCoastalLawnTexture(): THREE.CanvasTexture {
+  const size = 512;
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d')!;
+  const imgData = ctx.createImageData(size, size);
+  const data = imgData.data;
 
-  ctx.fillStyle = '#3f6b3c';
-  ctx.fillRect(0, 0, 256, 256);
+  // Deterministic toroidal value-noise helper (seamless at edges)
+  const hash2 = (ix: number, iy: number, period: number, seed: number): number => {
+    const wx = ((ix % period) + period) % period;
+    const wy = ((iy % period) + period) % period;
+    const n = Math.sin(wx * 127.1 + wy * 311.7 + seed * 74.7) * 43758.5453;
+    return n - Math.floor(n);
+  };
 
-  // Subtle organic earth & moss patches
-  for (let i = 0; i < 420; i++) {
-    const x = (i * 79 + (i % 7) * 13) % 256;
-    const y = (i * 113 + (i % 5) * 19) % 256;
-    const r = 3 + (i % 6);
-    ctx.fillStyle =
-      i % 4 === 0
-        ? 'rgba(104, 148, 76, 0.28)'
-        : i % 4 === 1
-        ? 'rgba(42, 74, 38, 0.3)'
-        : i % 4 === 2
-        ? 'rgba(72, 108, 56, 0.25)'
-        : 'rgba(116, 102, 72, 0.12)';
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
+  const smoothNoise = (u: number, v: number, period: number, seed: number): number => {
+    const x = u * period;
+    const y = v * period;
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    const fx = x - ix;
+    const fy = y - iy;
+    const sx = fx * fx * (3 - 2 * fx);
+    const sy = fy * fy * (3 - 2 * fy);
+    const n00 = hash2(ix, iy, period, seed);
+    const n10 = hash2(ix + 1, iy, period, seed);
+    const n01 = hash2(ix, iy + 1, period, seed);
+    const n11 = hash2(ix + 1, iy + 1, period, seed);
+    const nx0 = n00 + (n10 - n00) * sx;
+    const nx1 = n01 + (n11 - n01) * sx;
+    return nx0 + (nx1 - nx0) * sy;
+  };
+
+  for (let y = 0; y < size; y++) {
+    const v = y / size;
+    for (let x = 0; x < size; x++) {
+      const u = x / size;
+      const n1 = smoothNoise(u, v, 6, 1.3);
+      const n2 = smoothNoise(u, v, 14, 4.7);
+      const n3 = smoothNoise(u, v, 32, 9.1);
+      const n4 = smoothNoise(u, v, 64, 15.4);
+      const fbm = n1 * 0.44 + n2 * 0.28 + n3 * 0.18 + n4 * 0.1;
+      const dryPatch = smoothNoise(u, v, 8, 22.8);
+
+      // Natural Korean hillside palette: deep pine-moss olive -> sunlit meadow -> subtle warm dry thatch
+      let r = 56 + fbm * 52 + (dryPatch > 0.68 ? (dryPatch - 0.68) * 58 : 0);
+      let g = 88 + fbm * 64 + (dryPatch > 0.68 ? (dryPatch - 0.68) * 32 : 0);
+      let b = 48 + fbm * 34 + (dryPatch > 0.68 ? (dryPatch - 0.68) * 14 : 0);
+
+      // Micro organic blade grain
+      const micro = (hash2(x, y, size, 31.2) - 0.5) * 18;
+      r = Math.max(0, Math.min(255, r + micro * 0.8));
+      g = Math.max(0, Math.min(255, g + micro));
+      b = Math.max(0, Math.min(255, b + micro * 0.6));
+
+      const idx = (y * size + x) * 4;
+      data[idx] = Math.round(r);
+      data[idx + 1] = Math.round(g);
+      data[idx + 2] = Math.round(b);
+      data[idx + 3] = 255;
+    }
   }
-
-  // Fine grass blade strokes
-  for (let i = 0; i < 900; i++) {
-    const x = (i * 37) % 256;
-    const y = (i * 61) % 256;
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(130, 178, 92, 0.24)' : 'rgba(28, 56, 28, 0.28)';
-    ctx.fillRect(x, y, 1.5, 4);
-  }
+  ctx.putImageData(imgData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
@@ -1492,23 +1595,68 @@ export function createCoastalLawnTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Synthesizes a seamless tileable tangent-space water wave normal map (DataTexture)
- * from layered multi-directional periodic capillary/swell waves for realistic PBR water reflections.
+ * Creates a finely-grained seamless urban stone/earth plaza ground texture
+ * for the global base terrain so distant planes never display oversized stretched stone blocks.
+ */
+export function createWorldGroundTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#c9c2b4';
+  ctx.fillRect(0, 0, size, size);
+
+  // Subtle multi-tile stone paver grid (16x16 fine flagstones)
+  const cells = 16;
+  const step = size / cells;
+  for (let r = 0; r < cells; r++) {
+    for (let c = 0; c < cells; c++) {
+      const shade = ((r * 13 + c * 29) % 15) - 7;
+      ctx.fillStyle = `rgb(${200 + shade}, ${194 + shade}, ${182 + shade})`;
+      ctx.fillRect(c * step + 1, r * step + 1, step - 2, step - 2);
+    }
+  }
+
+  // Natural granite/gravel micro speckles
+  const imgData = ctx.getImageData(0, 0, size, size);
+  const data = imgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const grain = ((Math.sin(i * 12.9898) * 43758.5453) % 1) * 18 - 9;
+    data[i] = Math.max(0, Math.min(255, data[i] + grain));
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain));
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain - 2));
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Synthesizes a high-resolution 512x512 seamless tileable tangent-space water wave normal map
+ * combining broad river/sea swells and crisp fine wind capillary ripples.
  */
 export function createWaterNormalTexture(): THREE.DataTexture {
-  const size = 256;
+  const size = 512;
   const data = new Uint8Array(size * size * 4);
   const twoPi = Math.PI * 2;
 
   // Periodic wave octaves (integer cycles over [0, 1] guarantee seamless tiling)
   const waves: [number, number, number][] = [
-    [2, 3, 0.34],
-    [-3, 2, 0.28],
-    [5, -4, 0.18],
-    [-6, -5, 0.14],
-    [9, 7, 0.09],
-    [-8, 11, 0.07],
-    [13, -10, 0.05],
+    [2, 3, 0.30],
+    [-3, 2, 0.25],
+    [5, -4, 0.17],
+    [-6, -5, 0.13],
+    [9, 7, 0.085],
+    [-8, 11, 0.065],
+    [13, -10, 0.048],
+    [-17, 14, 0.032],
+    [21, 19, 0.022],
   ];
 
   for (let y = 0; y < size; y++) {
@@ -1522,8 +1670,8 @@ export function createWaterNormalTexture(): THREE.DataTexture {
         const [kx, ky, amp] = waves[w];
         const phase = twoPi * (kx * u + ky * v);
         const c = Math.cos(phase) * amp;
-        dx += kx * c * 0.24;
-        dy += ky * c * 0.24;
+        dx += kx * c * 0.22;
+        dy += ky * c * 0.22;
       }
 
       // Tangent-space normal N = normalize(-dx, -dy, 1)
